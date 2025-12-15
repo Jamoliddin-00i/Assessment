@@ -209,32 +209,107 @@ export default function SubmissionDetailPage() {
           </div>
         </div>
         {submission.status === "GRADED" && (
-          <div
-            className={`flex items-center gap-4 px-4 py-2 rounded-lg ${getScoreBgColor(
-              submission.score || 0,
-              submission.assessment.totalMarks
-            )}`}
-          >
-            <span className="text-sm font-medium">Score:</span>
-            <span
-              className={`text-2xl font-bold ${getScoreColor(
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex items-center gap-4 px-4 py-2 rounded-lg ${getScoreBgColor(
                 submission.score || 0,
                 submission.assessment.totalMarks
               )}`}
             >
-              {submission.score}/{submission.maxScore}
-            </span>
-            <Badge
-              variant={
-                scorePercentage >= 80
-                  ? "success"
-                  : scorePercentage >= 60
-                    ? "warning"
-                    : "destructive"
-              }
-            >
-              {scorePercentage}%
-            </Badge>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Score:</span>
+                  <span
+                    className={`text-2xl font-bold ${getScoreColor(
+                      submission.score || 0,
+                      submission.assessment.totalMarks
+                    )}`}
+                  >
+                    {submission.score}/{submission.maxScore}
+                  </span>
+                  <Badge
+                    variant={
+                      scorePercentage >= 80
+                        ? "success"
+                        : scorePercentage >= 60
+                          ? "warning"
+                          : "destructive"
+                    }
+                  >
+                    {scorePercentage}%
+                  </Badge>
+                </div>
+                {submission.originalScore !== null && submission.originalScore !== submission.score && (
+                  <span className="text-xs text-muted-foreground">
+                    AI Score: {submission.originalScore}/{submission.maxScore} (adjusted by teacher)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Adjust Score Button */}
+            <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => setAdjustedScore(String(submission.score || 0))}
+                >
+                  <Pencil className="h-3 w-3" />
+                  Adjust
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adjust Score</DialogTitle>
+                  <DialogDescription>
+                    Override the AI-generated score for {submission.student.name}&apos;s submission.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="score">New Score (0 - {submission.maxScore})</Label>
+                    <Input
+                      id="score"
+                      type="number"
+                      min={0}
+                      max={submission.maxScore || 100}
+                      value={adjustedScore}
+                      onChange={(e) => setAdjustedScore(e.target.value)}
+                      placeholder="Enter new score"
+                    />
+                    {submission.originalScore !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Original AI score: {submission.originalScore}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reason">Reason for Adjustment *</Label>
+                    <Textarea
+                      id="reason"
+                      value={adjustmentReason}
+                      onChange={(e) => setAdjustmentReason(e.target.value)}
+                      placeholder="Explain why you're adjusting this score..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setAdjustDialogOpen(false)}
+                    disabled={adjusting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAdjustScore} disabled={adjusting}>
+                    {adjusting ? "Saving..." : "Save Adjustment"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </div>
@@ -310,6 +385,36 @@ export default function SubmissionDetailPage() {
                     <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                       <div className="markdown-content whitespace-pre-wrap">
                         {submission.feedback}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Score Adjustment Notice */}
+                {submission.adjustmentReason && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-amber-800 dark:text-amber-400">
+                          Score Adjusted by Teacher
+                        </h4>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Original AI Score:</span>{" "}
+                          <span className="font-medium">{submission.originalScore}/{submission.maxScore}</span>
+                          {" → "}
+                          <span className="text-muted-foreground">Adjusted Score:</span>{" "}
+                          <span className="font-medium">{submission.score}/{submission.maxScore}</span>
+                        </p>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Reason:</span>{" "}
+                          {submission.adjustmentReason}
+                        </p>
+                        {submission.adjustedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Adjusted on {formatDate(submission.adjustedAt)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import sharp from "sharp";
+
+// Dynamic import for sharp to handle potential issues
+let sharpModule: typeof import("sharp") | null = null;
+
+async function getSharp() {
+  if (sharpModule === null) {
+    try {
+      sharpModule = (await import("sharp")).default;
+    } catch {
+      console.warn("Sharp module not available, image normalization disabled");
+      sharpModule = undefined as unknown as typeof import("sharp");
+    }
+  }
+  return sharpModule;
+}
 
 export interface OcrResult {
   text: string;
@@ -12,6 +26,7 @@ const BATCH_SIZE = 6;
  * Normalize image orientation to portrait mode
  * - Auto-rotates based on EXIF data
  * - Rotates landscape images to portrait
+ * - Falls back to original if processing fails
  */
 async function normalizeImageOrientation(
   buffer: Buffer,
@@ -23,30 +38,37 @@ async function normalizeImageOrientation(
       return { buffer, mimeType };
     }
 
-    let image = sharp(buffer);
+    const sharp = await getSharp();
+    if (!sharp) {
+      return { buffer, mimeType };
+    }
 
-    // Auto-rotate based on EXIF orientation
-    image = image.rotate();
+    // Create sharp instance with auto-rotation
+    const image = sharp(buffer, { failOnError: false }).rotate();
 
     // Get image metadata to check dimensions
     const metadata = await image.metadata();
 
+    let processedImage = image;
+
     if (metadata.width && metadata.height) {
       // If landscape (width > height), rotate 90 degrees clockwise to make portrait
       if (metadata.width > metadata.height) {
-        image = sharp(await image.toBuffer()).rotate(90);
+        processedImage = image.rotate(90);
       }
     }
 
-    // Convert to JPEG for consistency and smaller size
-    const normalizedBuffer = await image.jpeg({ quality: 90 }).toBuffer();
+    // Convert to JPEG for consistency
+    const normalizedBuffer = await processedImage
+      .jpeg({ quality: 85 })
+      .toBuffer();
 
     return {
       buffer: normalizedBuffer,
       mimeType: "image/jpeg",
     };
   } catch (error) {
-    console.warn("Failed to normalize image orientation, using original:", error);
+    console.warn("Image normalization failed, using original:", error);
     return { buffer, mimeType };
   }
 }

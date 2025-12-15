@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, FileText, Maximize2, Minimize2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,6 +25,10 @@ interface SubmissionData {
   maxScore: number | null;
   feedback: string | null;
   status: string;
+  // Manual adjustment fields
+  originalScore: number | null;
+  adjustmentReason: string | null;
+  adjustedAt: string | null;
   assessment: {
     id: string;
     title: string;
@@ -110,26 +114,35 @@ export default function FeedbackPage() {
             submission.assessment.totalMarks
           )}`}
         >
-          <span className="text-sm font-medium">Your Score:</span>
-          <span
-            className={`text-2xl font-bold ${getScoreColor(
-              submission.score || 0,
-              submission.assessment.totalMarks
-            )}`}
-          >
-            {submission.score}/{submission.maxScore}
-          </span>
-          <Badge
-            variant={
-              scorePercentage >= 80
-                ? "success"
-                : scorePercentage >= 60
-                ? "warning"
-                : "destructive"
-            }
-          >
-            {scorePercentage}%
-          </Badge>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Your Score:</span>
+              <span
+                className={`text-2xl font-bold ${getScoreColor(
+                  submission.score || 0,
+                  submission.assessment.totalMarks
+                )}`}
+              >
+                {submission.score}/{submission.maxScore}
+              </span>
+              <Badge
+                variant={
+                  scorePercentage >= 80
+                    ? "success"
+                    : scorePercentage >= 60
+                    ? "warning"
+                    : "destructive"
+                }
+              >
+                {scorePercentage}%
+              </Badge>
+            </div>
+            {submission.originalScore !== null && submission.originalScore !== submission.score && (
+              <span className="text-xs text-muted-foreground">
+                Adjusted by teacher (AI: {submission.originalScore}/{submission.maxScore})
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -203,6 +216,30 @@ export default function FeedbackPage() {
                     <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg prose prose-sm max-w-none dark:prose-invert">
                       <div className="markdown-content whitespace-pre-wrap">
                         {submission.feedback}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Score Adjustment Notice */}
+                {submission.adjustmentReason && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-amber-800 dark:text-amber-400">
+                          Score Adjusted by Teacher
+                        </h4>
+                        <p className="text-sm">
+                          Your score was adjusted from{" "}
+                          <span className="font-medium">{submission.originalScore}/{submission.maxScore}</span>
+                          {" to "}
+                          <span className="font-medium">{submission.score}/{submission.maxScore}</span>
+                        </p>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Reason:</span>{" "}
+                          {submission.adjustmentReason}
+                        </p>
                       </div>
                     </div>
                   </div>
