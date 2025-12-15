@@ -1,52 +1,85 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthSession } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { z } from "zod";
 
-export async function POST(req: Request) {
-    const session = await getServerSession(authOptions);
+const joinClassSchema = z.object({
+  code: z.string().length(6, "Class code must be 6 characters"),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getAuthSession();
 
     if (!session || session.user.role !== "STUDENT") {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    try {
-        const { code } = await req.json();
+    const body = await request.json();
+    const validatedData = joinClassSchema.parse(body);
 
-        if (!code) {
-            return NextResponse.json({ message: "Code is required" }, { status: 400 });
-        }
+    // Find the class by code
+    const classToJoin = await prisma.class.findUnique({
+      where: { code: validatedData.code },
+      include: {
+        teacher: {
+          select: { name: true },
+        },
+      },
+    });
 
-        const classToJoin = await prisma.class.findUnique({
-            where: { code },
-        });
-
-        if (!classToJoin) {
-            return NextResponse.json({ message: "Invalid class code" }, { status: 404 });
-        }
-
-        const existingMembership = await prisma.classMembership.findUnique({
-            where: {
-                classId_studentId: {
-                    classId: classToJoin.id,
-                    studentId: session.user.id,
-                },
-            },
-        });
-
-        if (existingMembership) {
-            return NextResponse.json({ message: "Already a member" }, { status: 400 });
-        }
-
-        await prisma.classMembership.create({
-            data: {
-                classId: classToJoin.id,
-                studentId: session.user.id,
-            },
-        });
-
-        return NextResponse.json({ message: "Joined successfully" }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ message: "Internal Error" }, { status: 500 });
+    if (!classToJoin) {
+      return NextResponse.json(
+        { error: "Class not found. Please check the code and try again." },
+        { status: 404 }
+      );
     }
+
+    // Check if student is already enrolled
+    const existingEnrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_classId: {
+          studentId: session.user.id,
+          classId: classToJoin.id,
+        },
+      },
+    });
+
+    if (existingEnrollment) {
+      return NextResponse.json(
+        { error: "You are already enrolled in this class" },
+        { status: 400 }
+      );
+    }
+
+    // Create enrollment
+    await prisma.enrollment.create({
+      data: {
+        studentId: session.user.id,
+        classId: classToJoin.id,
+      },
+    });
+
+    return NextResponse.json({
+      message: "Joined class successfully",
+      class: {
+        id: classToJoin.id,
+        name: classToJoin.name,
+        teacher: classToJoin.teacher.name,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    console.error("Error joining class:", error);
+    return NextResponse.json(
+      { error: "Failed to join class" },
+      { status: 500 }
+    );
+  }
 }

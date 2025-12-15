@@ -1,41 +1,38 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getAuthSession } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-export async function GET(req: Request) {
-    const session = await getServerSession(authOptions);
+export async function GET() {
+  try {
+    const session = await getAuthSession();
 
     if (!session || session.user.role !== "STUDENT") {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    try {
-        const memberships = await prisma.classMembership.findMany({
-            where: {
-                studentId: session.user.id,
+    const enrollments = await prisma.enrollment.findMany({
+      where: { studentId: session.user.id },
+      include: {
+        class: {
+          include: {
+            teacher: {
+              select: { name: true },
             },
-            include: {
-                class: {
-                    include: {
-                        teacher: {
-                            select: { name: true },
-                        },
-                    },
-                },
+            _count: {
+              select: { assessments: true },
             },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+          },
+        },
+      },
+      orderBy: { joinedAt: "desc" },
+    });
 
-        const classes = memberships.map((m) => ({
-            ...m.class,
-            joinedAt: m.createdAt,
-        }));
-
-        return NextResponse.json(classes);
-    } catch (error) {
-        return NextResponse.json({ message: "Internal Error" }, { status: 500 });
-    }
+    return NextResponse.json({ enrollments });
+  } catch (error) {
+    console.error("Error fetching student classes:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch classes" },
+      { status: 500 }
+    );
+  }
 }

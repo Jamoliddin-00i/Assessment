@@ -1,14 +1,25 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/toaster";
 
-export function Providers({ children }: { children: React.ReactNode }) {
-    return (
-        <SessionProvider>
-            <NextThemesProvider attribute="class" defaultTheme="system" enableSystem themes={["light", "dark", "pastel"]}>
-                {children}
-            </NextThemesProvider>
-        </SessionProvider>
-    );
+interface ProvidersProps {
+  children: React.ReactNode;
+}
+
+export function Providers({ children }: ProvidersProps) {
+  return (
+    <SessionProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {children}
+        <Toaster />
+      </ThemeProvider>
+    </SessionProvider>
+  );
 }

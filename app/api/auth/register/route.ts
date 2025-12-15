@@ -1,25 +1,69 @@
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import prisma from "@/lib/prisma";
+import { z } from "zod";
 
-export async function POST(req: Request) {
-    const body = await req.json();
-    const { name, email, password, role } = body;
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["STUDENT", "TEACHER"]),
+});
 
-    if (!name || !email || !password || !role) {
-        return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-        return NextResponse.json({ error: "User exists" }, { status: 400 });
-    }
+    // Validate input
+    const validatedData = registerSchema.parse(body);
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-        data: { name, email, passwordHash, role: role as Role },
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: validatedData.email },
     });
 
-    return NextResponse.json({ id: user.id, email: user.email });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "An account with this email already exists" },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(validatedData.password, 12);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name: validatedData.name,
+        email: validatedData.email,
+        password: hashedPassword,
+        role: validatedData.role,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    return NextResponse.json(
+      { message: "Account created successfully", user },
+      { status: 201 }
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    console.error("Registration error:", error);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
+  }
 }

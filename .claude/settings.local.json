@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npm run dev)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm start)",
+      "WebFetch(domain:localhost)",
+      "Bash(set \"PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes\")",
+      "mcp__ide__getDiagnostics",
+      "WebSearch",
+      "Bash(claude mcp add context7 -- npx -y @upstash/context7-mcp)",
+      "Bash(claude mcp list:*)",
+      "Bash(node --version:*)",
+      "Bash(npx:*)",
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp add context7 -- npx -y @upstash/context7-mcp@latest)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

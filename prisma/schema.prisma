@@ -1,147 +1,131 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  password       String
+  role           Role      @default(STUDENT)
+  avatar         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Teacher relations
+  teacherClasses Class[]   @relation("TeacherClasses")
+
+  // Student relations
+  enrollments    Enrollment[]
+  submissions    Submission[]
+
+  @@map("users")
+}
+
+model Class {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  code        String       @unique
+  subject     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Teacher relation
+  teacherId   String
+  teacher     User         @relation("TeacherClasses", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Student enrollments
+  enrollments Enrollment[]
+
+  // Assessments in this class
+  assessments Assessment[]
+
+  @@map("classes")
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  joinedAt  DateTime @default(now())
+
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId])
+  @@map("enrollments")
+}
+
+model Assessment {
+  id              String       @id @default(cuid())
+  title           String
+  markScheme      String       // Extracted text from PDF
+  markSchemePdfUrl String?     // Original PDF URL
+  totalMarks      Int
+  status          AssessmentStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Class relation
+  classId     String
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  // Student submissions
+  submissions Submission[]
+
+  @@map("assessments")
+}
+
+model Submission {
+  id              String           @id @default(cuid())
+  imageUrls       String           // JSON array of image paths
+  extractedText   String?          // OCR extracted text
+  score           Int?
+  maxScore        Int?
+  feedback        String?          // AI generated feedback
+  status          SubmissionStatus @default(PENDING)
+  gradedAt        DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Manual score adjustment by teacher
+  originalScore   Int?             // Original AI-generated score (stored when teacher adjusts)
+  adjustedBy      String?          // Teacher ID who made the adjustment
+  adjustmentReason String?         // Reason for the adjustment
+  adjustedAt      DateTime?        // When the adjustment was made
+
+  // Relations
+  studentId       String
+  student         User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  assessmentId    String
+  assessment      Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, assessmentId])
+  @@map("submissions")
 }
 
 enum Role {
-  TEACHER
   STUDENT
+  TEACHER
 }
 
-enum Strictness {
-  STRICT
-  FAIR
-  EASY
+enum AssessmentStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
 }
 
 enum SubmissionStatus {
   PENDING
+  PROCESSING
   GRADED
-  NEEDS_REVIEW
-}
-
-model User {
-  id           String            @id @default(cuid())
-  name         String
-  email        String            @unique
-  passwordHash String
-  role         Role
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  classes      Class[]           @relation("TeacherClasses")
-  memberships  ClassMembership[]
-  submissions  Submission[]
-}
-
-model Class {
-  id          String    @id @default(cuid())
-  name        String
-  code        String    @unique
-  teacherId   String
-  teacher     User      @relation("TeacherClasses", fields: [teacherId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  memberships ClassMembership[]
-  assessments Assessment[]
-}
-
-model ClassMembership {
-  id        String   @id @default(cuid())
-  classId   String
-  class     Class    @relation(fields: [classId], references: [id])
-  studentId String
-  student   User     @relation(fields: [studentId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([classId, studentId])
-}
-
-model Assessment {
-  id          String      @id @default(cuid())
-  classId     String
-  class       Class       @relation(fields: [classId], references: [id])
-  title       String
-  description String?
-  strictness  Strictness  @default(FAIR)
-  totalMarks  Int
-  date        DateTime
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  questions   Question[]
-  submissions Submission[]
-}
-
-model Question {
-  id             String            @id @default(cuid())
-  assessmentId   String
-  assessment     Assessment        @relation(fields: [assessmentId], references: [id])
-  questionNumber String
-  text           String
-  maxMarks       Int
-
-  markScheme      MarkSchemePoint[]
-  questionResults QuestionResult[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model MarkSchemePoint {
-  id         String   @id @default(cuid())
-  questionId String
-  question   Question @relation(fields: [questionId], references: [id])
-  ideaText   String
-  marks      Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Submission {
-  id           String           @id @default(cuid())
-  assessmentId String
-  assessment   Assessment       @relation(fields: [assessmentId], references: [id])
-  studentId    String
-  student      User             @relation(fields: [studentId], references: [id])
-  status       SubmissionStatus @default(PENDING)
-  totalMarks   Int?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-
-  files            SubmissionFile[]
-  questionResults  QuestionResult[]
-}
-
-model SubmissionFile {
-  id           String     @id @default(cuid())
-  submissionId String
-  submission   Submission @relation(fields: [submissionId], references: [id])
-  filePath     String
-  originalName String
-  mimeType     String
-  pageCount    Int?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model QuestionResult {
-  id           String     @id @default(cuid())
-  submissionId String
-  submission   Submission @relation(fields: [submissionId], references: [id])
-  questionId   String
-  question     Question   @relation(fields: [questionId], references: [id])
-  awardedMarks Int
-  aiConfidence Float?
-  ocrText      String?    @db.Text
-  feedback     String?    @db.Text
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  ERROR
 }
