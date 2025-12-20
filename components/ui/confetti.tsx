@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
 interface ConfettiOptions {
   particleCount?: number;
@@ -18,9 +19,10 @@ export function useConfetti() {
   const confettiRef = useRef<confetti.CreateTypes | null>(null);
 
   useEffect(() => {
+    const confettiInstance = confettiRef.current;
     return () => {
-      if (confettiRef.current) {
-        confettiRef.current.reset();
+      if (confettiInstance) {
+        confettiInstance.reset();
       }
     };
   }, []);
@@ -36,6 +38,7 @@ export function useConfetti() {
       origin: { x: 0.5, y: 0.5 },
     };
 
+    playGlobalSound("celebrate");
     confetti({
       ...defaults,
       ...options,
@@ -43,6 +46,7 @@ export function useConfetti() {
   }, []);
 
   const fireSchoolPride = useCallback(() => {
+    playGlobalSound("celebrate");
     const end = Date.now() + 3 * 1000;
     const colors = ["#3b82f6", "#8b5cf6", "#ec4899"];
 
@@ -69,6 +73,7 @@ export function useConfetti() {
   }, []);
 
   const fireStars = useCallback(() => {
+    playGlobalSound("achievement");
     const defaults = {
       spread: 360,
       ticks: 100,
@@ -100,6 +105,7 @@ export function useConfetti() {
   }, []);
 
   const fireRealistic = useCallback(() => {
+    playGlobalSound("celebrate");
     const count = 200;
     const defaults = {
       origin: { y: 0.7 },
@@ -138,6 +144,7 @@ export function useConfetti() {
   }, []);
 
   const fireSideCannons = useCallback(() => {
+    playGlobalSound("celebrate");
     const end = Date.now() + 1000;
 
     (function frame() {
@@ -163,6 +170,7 @@ export function useConfetti() {
   }, []);
 
   const fireEmoji = useCallback((emoji: string = "🎉") => {
+    playGlobalSound("celebrate");
     const scalar = 2;
     const emojiShape = confetti.shapeFromText({ text: emoji, scalar });
 

@@ -4,8 +4,19 @@ import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+function DropdownMenu({
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) {
+  const handleOpenChange = (open: boolean) => {
+    playGlobalSound(open ? "open" : "close");
+    onOpenChange?.(open);
+  };
+
+  return <DropdownMenuPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
+}
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
@@ -78,14 +89,19 @@ const DropdownMenuItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
     inset?: boolean;
   }
->(({ className, inset, ...props }, ref) => (
+>(({ className, inset, onSelect, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       inset && "pl-8",
       className
     )}
+    onSelect={(e) => {
+      // Don't prevent default to allow Link navigation
+      playGlobalSound("select");
+      onSelect?.(e);
+    }}
     {...props}
   />
 ));
@@ -94,7 +110,7 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
+>(({ className, children, checked, onCheckedChange, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
@@ -102,6 +118,10 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       className
     )}
     checked={checked}
+    onCheckedChange={(value) => {
+      playGlobalSound("toggle");
+      onCheckedChange?.(value);
+    }}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">

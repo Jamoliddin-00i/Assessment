@@ -5,6 +5,7 @@ import * as ToastPrimitives from "@radix-ui/react-toast";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
 const ToastProvider = ToastPrimitives.Provider;
 
@@ -45,11 +46,26 @@ const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
+>(({ className, variant, onOpenChange, ...props }, ref) => {
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      // Play sound based on variant
+      if (variant === "success") {
+        playGlobalSound("success");
+      } else if (variant === "destructive") {
+        playGlobalSound("error");
+      } else {
+        playGlobalSound("notification");
+      }
+    }
+    onOpenChange?.(open);
+  };
+
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
+      onOpenChange={handleOpenChange}
       {...props}
     />
   );

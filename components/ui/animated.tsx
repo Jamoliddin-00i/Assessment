@@ -414,10 +414,9 @@ export function Shimmer({ className, width, height }: ShimmerProps) {
 interface MagneticProps {
   children: ReactNode;
   className?: string;
-  strength?: number;
 }
 
-export function Magnetic({ children, className, strength = 0.3 }: MagneticProps) {
+export function Magnetic({ children, className }: MagneticProps) {
   return (
     <motion.div
       className={className}

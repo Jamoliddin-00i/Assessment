@@ -2,15 +2,10 @@
 
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useTheme } from "next-themes";
 import {
   User,
-  Moon,
-  Sun,
-  Monitor,
   Bell,
   Shield,
-  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,11 +34,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
-  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -123,7 +116,7 @@ export default function SettingsPage() {
 
       // Sign out and redirect to home
       await signOut({ callbackUrl: "/" });
-    } catch (error) {
+    } catch {
       toast({
         title: "Delete failed",
         description: "Failed to delete your account",
@@ -134,12 +127,6 @@ export default function SettingsPage() {
       setShowDeleteDialog(false);
     }
   };
-
-  const themeOptions = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
-  ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -196,57 +183,6 @@ export default function SettingsPage() {
             <Button onClick={handleUpdateProfile} loading={loading}>
               Save Changes
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Appearance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Appearance
-          </CardTitle>
-          <CardDescription>
-            Customize how the application looks
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Theme</Label>
-            <div className="grid grid-cols-3 gap-4">
-              {themeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setTheme(option.value)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                    theme === option.value
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <option.icon
-                    className={cn(
-                      "h-6 w-6",
-                      theme === option.value
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      theme === option.value
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {option.label}
-                  </span>
-                </button>
-              ))}
-            </div>
           </div>
         </CardContent>
       </Card>

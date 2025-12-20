@@ -3,7 +3,12 @@ import { getAuthSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { extractTextFromPdf } from "@/lib/services/ocr-service";
+import {
+  extractTextFromMultipleMarkSchemeFiles,
+  extractTextFromMarkSchemeFile,
+  isSupportedMarkSchemeType,
+  getExtensionFromMimeType,
+} from "@/lib/services/ocr-service";
 
 export async function POST(
   request: NextRequest,
@@ -33,7 +38,9 @@ export async function POST(
     const formData = await request.formData();
     const title = formData.get("title") as string;
     const totalMarks = parseInt(formData.get("totalMarks") as string, 10);
-    const markSchemePdf = formData.get("markSchemePdf") as File;
+
+    // Get all mark scheme files (supports multiple files)
+    const markSchemeFiles = formData.getAll("markSchemeFiles") as File[];
 
     if (!title || title.length < 2) {
       return NextResponse.json(
@@ -49,34 +56,66 @@ export async function POST(
       );
     }
 
-    if (!markSchemePdf) {
+    if (!markSchemeFiles || markSchemeFiles.length === 0) {
       return NextResponse.json(
-        { error: "Mark scheme PDF is required" },
+        { error: "At least one mark scheme file is required" },
         { status: 400 }
       );
     }
 
-    // Save the PDF file
+    // Validate all files
+    for (const file of markSchemeFiles) {
+      if (!isSupportedMarkSchemeType(file.type)) {
+        return NextResponse.json(
+          { error: `Unsupported file type: ${file.type}. Supported: PDF, Word, Excel, and images.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Save all files
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "markschemes");
     await mkdir(uploadsDir, { recursive: true });
 
-    const bytes = await markSchemePdf.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const savedFileUrls: string[] = [];
+    const fileBuffers: { buffer: Buffer; mimeType: string; filename: string }[] = [];
 
-    const filename = `${classId}-${Date.now()}.pdf`;
-    const filepath = path.join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+    for (let i = 0; i < markSchemeFiles.length; i++) {
+      const file = markSchemeFiles[i];
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
 
-    const markSchemePdfUrl = `/uploads/markschemes/${filename}`;
+      // Get the appropriate extension based on MIME type
+      const extension = getExtensionFromMimeType(file.type) || path.extname(file.name) || ".bin";
+      const filename = `${classId}-${Date.now()}-${i}${extension}`;
+      const filepath = path.join(uploadsDir, filename);
+      await writeFile(filepath, buffer);
 
-    // Extract text from PDF using Gemini
-    console.log("Extracting text from mark scheme PDF...");
-    const markSchemeText = await extractTextFromPdf(buffer);
+      const fileUrl = `/uploads/markschemes/${filename}`;
+      savedFileUrls.push(fileUrl);
+      fileBuffers.push({ buffer, mimeType: file.type, filename: file.name });
+    }
+
+    // Extract text from all mark scheme files
+    console.log(`Extracting text from ${markSchemeFiles.length} mark scheme file(s)...`);
+
+    let markSchemeText: string;
+    if (fileBuffers.length === 1) {
+      // Single file - use single file extraction
+      markSchemeText = await extractTextFromMarkSchemeFile(
+        fileBuffers[0].buffer,
+        fileBuffers[0].mimeType
+      );
+    } else {
+      // Multiple files - use combined extraction
+      markSchemeText = await extractTextFromMultipleMarkSchemeFiles(fileBuffers);
+    }
+
     console.log("Mark scheme text extracted successfully");
 
     if (!markSchemeText || markSchemeText.length < 10) {
       return NextResponse.json(
-        { error: "Could not extract text from PDF. Please ensure the PDF contains readable text." },
+        { error: "Could not extract text from files. Please ensure the files contain readable content." },
         { status: 400 }
       );
     }
@@ -85,7 +124,8 @@ export async function POST(
       data: {
         title,
         markScheme: markSchemeText,
-        markSchemePdfUrl,
+        markSchemePdfUrl: savedFileUrls[0], // First file URL for backwards compatibility
+        markSchemeFileUrls: JSON.stringify(savedFileUrls), // All file URLs
         totalMarks,
         classId,
       },
@@ -97,8 +137,9 @@ export async function POST(
     );
   } catch (error) {
     console.error("Error creating assessment:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to create assessment" },
+      { error: `Failed to create assessment: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -80,11 +80,7 @@ export default function AssessmentPage() {
   const isTeacher = session?.user?.role === "TEACHER";
   const assessmentId = params.assessmentId as string;
 
-  useEffect(() => {
-    fetchAssessment();
-  }, [assessmentId]);
-
-  const fetchAssessment = async () => {
+  const fetchAssessment = useCallback(async () => {
     try {
       const response = await fetch(`/api/assessments/${assessmentId}`);
 
@@ -94,7 +90,7 @@ export default function AssessmentPage() {
 
       const data = await response.json();
       setAssessment(data.assessment);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load assessment",
@@ -104,7 +100,11 @@ export default function AssessmentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [assessmentId, toast, router]);
+
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
 
   const mySubmission = assessment?.submissions.find(
     (s) => s.student.id === session?.user?.id
@@ -126,7 +126,7 @@ export default function AssessmentPage() {
         description: "Assessment deleted successfully",
       });
       router.push(`/classes/${assessment?.class.id}`);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete assessment",

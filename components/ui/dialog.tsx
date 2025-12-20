@@ -4,8 +4,19 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
-const Dialog = DialogPrimitive.Root;
+function Dialog({
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) {
+  const handleOpenChange = (open: boolean) => {
+    playGlobalSound(open ? "open" : "close");
+    onOpenChange?.(open);
+  };
+
+  return <DialogPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
+}
 
 const DialogTrigger = DialogPrimitive.Trigger;
 

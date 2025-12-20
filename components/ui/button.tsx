@@ -5,6 +5,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 relative overflow-hidden",
@@ -85,6 +86,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         }, 600);
       }
 
+      // Play click sound
+      if (!disabled && !loading) {
+        playGlobalSound("click");
+      }
+
       onClick?.(e);
     };
 
@@ -100,6 +106,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       );
     }
 
+    // Extract only the props we need, avoiding React/Framer Motion type conflicts
+    const { type, name, value, form, formAction, formEncType, formMethod, formNoValidate, formTarget } = props;
+
+    // These are the safe HTML button attributes to pass through
+    const safeProps = { type, name, value, form, formAction, formEncType, formMethod, formNoValidate, formTarget };
+
     return (
       <motion.button
         className={cn(buttonVariants({ variant, size, className }))}
@@ -109,7 +121,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={disabled || loading ? {} : { scale: 1.02 }}
         whileTap={disabled || loading ? {} : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        {...props}
+        {...safeProps}
       >
         {/* Ripple effects */}
         {ripples.map((ripple) => (

@@ -4,8 +4,31 @@ import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
-const Select = SelectPrimitive.Root;
+function Select({
+  onOpenChange,
+  onValueChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) {
+  const handleOpenChange = (open: boolean) => {
+    playGlobalSound(open ? "open" : "close");
+    onOpenChange?.(open);
+  };
+
+  const handleValueChange = (value: string) => {
+    playGlobalSound("select");
+    onValueChange?.(value);
+  };
+
+  return (
+    <SelectPrimitive.Root
+      onOpenChange={handleOpenChange}
+      onValueChange={handleValueChange}
+      {...props}
+    />
+  );
+}
 
 const SelectGroup = SelectPrimitive.Group;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
@@ -30,6 +30,7 @@ import { useSoundEffects } from "@/hooks/use-sound-effects";
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const isTeacher = session?.user?.role === "TEACHER";
   const { playSound } = useSoundEffects();
 
@@ -52,7 +53,7 @@ export function Navbar() {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60"
     >
-      <div className="container flex h-16 items-center justify-between">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10 lg:px-16 flex h-16 items-center justify-between">
         <div className="flex items-center gap-8">
           <Link
             href="/dashboard"
@@ -147,25 +148,25 @@ export function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/settings"
-                  className="cursor-pointer"
-                  onClick={() => playSound("click")}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => {
+                  playSound("click");
+                  router.push("/settings");
+                }}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/profile"
-                  className="cursor-pointer"
-                  onClick={() => playSound("click")}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </Link>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => {
+                  playSound("click");
+                  router.push("/profile");
+                }}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

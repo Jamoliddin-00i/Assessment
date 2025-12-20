@@ -1,21 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  BookOpen,
   Copy,
   FileText,
   Plus,
-  Settings,
   Users,
   Calendar,
   CheckCircle2,
-  Clock,
-  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,11 +72,7 @@ export default function ClassDetailPage() {
   const isTeacher = session?.user?.role === "TEACHER";
   const classId = params.classId as string;
 
-  useEffect(() => {
-    fetchClassDetails();
-  }, [classId]);
-
-  const fetchClassDetails = async () => {
+  const fetchClassDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/classes/${classId}`);
 
@@ -90,7 +82,7 @@ export default function ClassDetailPage() {
 
       const data = await response.json();
       setClassData(data.class);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load class details",
@@ -100,7 +92,11 @@ export default function ClassDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId, toast, router]);
+
+  useEffect(() => {
+    fetchClassDetails();
+  }, [fetchClassDetails]);
 
   const copyClassCode = () => {
     if (classData?.code) {

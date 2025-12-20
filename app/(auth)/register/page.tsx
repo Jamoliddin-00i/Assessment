@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { playGlobalSound } from "@/hooks/use-sound-effects";
 
 type Role = "STUDENT" | "TEACHER";
 
@@ -114,7 +115,10 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, role: "STUDENT" })}
+                onClick={() => {
+                  playGlobalSound("select");
+                  setFormData({ ...formData, role: "STUDENT" });
+                }}
                 className={cn(
                   "p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                   formData.role === "STUDENT"
@@ -143,7 +147,10 @@ export default function RegisterPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, role: "TEACHER" })}
+                onClick={() => {
+                  playGlobalSound("select");
+                  setFormData({ ...formData, role: "TEACHER" });
+                }}
                 className={cn(
                   "p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                   formData.role === "TEACHER"

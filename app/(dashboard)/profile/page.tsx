@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   User,
   Mail,
@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { getInitials, formatDate } from "@/lib/utils";
+import { getInitials } from "@/lib/utils";
 
 interface ProfileStats {
   totalClasses: number;
@@ -41,11 +41,7 @@ export default function ProfilePage() {
 
   const isTeacher = session?.user?.role === "TEACHER";
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const endpoint = isTeacher
         ? "/api/dashboard/stats"
@@ -61,7 +57,11 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isTeacher]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

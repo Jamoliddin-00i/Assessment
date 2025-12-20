@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, Pencil, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,6 +28,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getScoreColor, getScoreBgColor } from "@/lib/utils";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable-panel";
 
 interface SubmissionDetail {
   id: string;
@@ -77,9 +82,31 @@ export default function SubmissionDetailPage() {
   const assessmentId = params.assessmentId as string;
   const submissionId = params.submissionId as string;
 
+  const fetchSubmission = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/submissions/${submissionId}`);
+
+      if (!response.ok) {
+        throw new Error("Submission not found");
+      }
+
+      const data = await response.json();
+      setSubmission(data.submission);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load submission",
+        variant: "destructive",
+      });
+      router.push(`/assessments/${assessmentId}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [submissionId, assessmentId, toast, router]);
+
   useEffect(() => {
     fetchSubmission();
-  }, [submissionId]);
+  }, [fetchSubmission]);
 
   // Poll for updates if processing
   useEffect(() => {
@@ -94,29 +121,7 @@ export default function SubmissionDetailPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [submission?.status, submissionId]);
-
-  const fetchSubmission = async () => {
-    try {
-      const response = await fetch(`/api/submissions/${submissionId}`);
-
-      if (!response.ok) {
-        throw new Error("Submission not found");
-      }
-
-      const data = await response.json();
-      setSubmission(data.submission);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load submission",
-        variant: "destructive",
-      });
-      router.push(`/assessments/${assessmentId}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [submission?.status, fetchSubmission]);
 
   const handleAdjustScore = async () => {
     if (!submission) return;
@@ -208,125 +213,136 @@ export default function SubmissionDetailPage() {
             </p>
           </div>
         </div>
-        {submission.status === "GRADED" && (
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex items-center gap-4 px-4 py-2 rounded-lg ${getScoreBgColor(
-                submission.score || 0,
-                submission.assessment.totalMarks
-              )}`}
-            >
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Score:</span>
-                  <span
-                    className={`text-2xl font-bold ${getScoreColor(
-                      submission.score || 0,
-                      submission.assessment.totalMarks
-                    )}`}
-                  >
-                    {submission.score}/{submission.maxScore}
-                  </span>
-                  <Badge
-                    variant={
-                      scorePercentage >= 80
-                        ? "success"
-                        : scorePercentage >= 60
-                          ? "warning"
-                          : "destructive"
-                    }
-                  >
-                    {scorePercentage}%
-                  </Badge>
+        <div className="flex items-center gap-3">
+          {/* Resubmit Button - shows for GRADED, ERROR, or PROCESSING status */}
+          {(submission.status === "GRADED" || submission.status === "ERROR" || submission.status === "PROCESSING") && (
+            <Link href={`/assessments/${assessmentId}/submit?resubmit=${submissionId}`}>
+              <Button variant="outline" size="sm" className="gap-1">
+                <RefreshCw className="h-3 w-3" />
+                Resubmit
+              </Button>
+            </Link>
+          )}
+          {submission.status === "GRADED" && (
+            <>
+              <div
+                className={`flex items-center gap-4 px-4 py-2 rounded-lg ${getScoreBgColor(
+                  submission.score || 0,
+                  submission.assessment.totalMarks
+                )}`}
+              >
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Score:</span>
+                    <span
+                      className={`text-2xl font-bold ${getScoreColor(
+                        submission.score || 0,
+                        submission.assessment.totalMarks
+                      )}`}
+                    >
+                      {submission.score}/{submission.maxScore}
+                    </span>
+                    <Badge
+                      variant={
+                        scorePercentage >= 80
+                          ? "success"
+                          : scorePercentage >= 60
+                            ? "warning"
+                            : "destructive"
+                      }
+                    >
+                      {scorePercentage}%
+                    </Badge>
+                  </div>
+                  {submission.originalScore !== null && submission.originalScore !== submission.score && (
+                    <span className="text-xs text-muted-foreground">
+                      AI Score: {submission.originalScore}/{submission.maxScore} (adjusted by teacher)
+                    </span>
+                  )}
                 </div>
-                {submission.originalScore !== null && submission.originalScore !== submission.score && (
-                  <span className="text-xs text-muted-foreground">
-                    AI Score: {submission.originalScore}/{submission.maxScore} (adjusted by teacher)
-                  </span>
-                )}
               </div>
-            </div>
 
-            {/* Adjust Score Button */}
-            <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                  onClick={() => setAdjustedScore(String(submission.score || 0))}
-                >
-                  <Pencil className="h-3 w-3" />
-                  Adjust
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adjust Score</DialogTitle>
-                  <DialogDescription>
-                    Override the AI-generated score for {submission.student.name}&apos;s submission.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="score">New Score (0 - {submission.maxScore})</Label>
-                    <Input
-                      id="score"
-                      type="number"
-                      min={0}
-                      max={submission.maxScore || 100}
-                      value={adjustedScore}
-                      onChange={(e) => setAdjustedScore(e.target.value)}
-                      placeholder="Enter new score"
-                    />
-                    {submission.originalScore !== null && (
-                      <p className="text-xs text-muted-foreground">
-                        Original AI score: {submission.originalScore}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reason">Reason for Adjustment *</Label>
-                    <Textarea
-                      id="reason"
-                      value={adjustmentReason}
-                      onChange={(e) => setAdjustmentReason(e.target.value)}
-                      placeholder="Explain why you're adjusting this score..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
+              {/* Adjust Score Button */}
+              <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
+                <DialogTrigger asChild>
                   <Button
                     variant="outline"
-                    onClick={() => setAdjustDialogOpen(false)}
-                    disabled={adjusting}
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => setAdjustedScore(String(submission.score || 0))}
                   >
-                    Cancel
+                    <Pencil className="h-3 w-3" />
+                    Adjust
                   </Button>
-                  <Button onClick={handleAdjustScore} disabled={adjusting}>
-                    {adjusting ? "Saving..." : "Save Adjustment"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        )}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adjust Score</DialogTitle>
+                    <DialogDescription>
+                      Override the AI-generated score for {submission.student.name}&apos;s submission.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="score">New Score (0 - {submission.maxScore})</Label>
+                      <Input
+                        id="score"
+                        type="number"
+                        min={0}
+                        max={submission.maxScore || 100}
+                        value={adjustedScore}
+                        onChange={(e) => setAdjustedScore(e.target.value)}
+                        placeholder="Enter new score"
+                      />
+                      {submission.originalScore !== null && (
+                        <p className="text-xs text-muted-foreground">
+                          Original AI score: {submission.originalScore}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="reason">Reason for Adjustment *</Label>
+                      <Textarea
+                        id="reason"
+                        value={adjustmentReason}
+                        onChange={(e) => setAdjustmentReason(e.target.value)}
+                        placeholder="Explain why you're adjusting this score..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setAdjustDialogOpen(false)}
+                      disabled={adjusting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAdjustScore} disabled={adjusting}>
+                      {adjusting ? "Saving..." : "Save Adjustment"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Split Screen */}
-      <div className="flex-1 flex gap-4 min-h-0">
+      {/* Resizable Split Screen */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0 rounded-lg border">
         {/* Left Panel - Submitted Work + Feedback */}
-        <div className="w-1/2 min-w-0 flex flex-col">
-          <Card className="flex-1 flex flex-col min-h-0">
-            <CardHeader className="py-3">
+        <ResizablePanel defaultSize={50} minSize={25} maxSize={75} className="flex flex-col">
+          <Card className="flex-1 flex flex-col min-h-0 border-0 rounded-none">
+            <CardHeader className="py-3 border-b">
               <CardTitle className="text-base">Submitted Work & Feedback</CardTitle>
               <CardDescription className="text-xs">
                 Student submission with AI-generated feedback
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-auto pb-6">
-              <div className="space-y-6">
+            <CardContent className="flex-1 overflow-auto pb-6 pt-4" style={{ direction: 'rtl' }}>
+              <div className="space-y-6" style={{ direction: 'ltr' }}>
                 {/* Submission Info */}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div>
@@ -443,12 +459,15 @@ export default function SubmissionDetailPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </ResizablePanel>
+
+        {/* Resizable Handle / Divider */}
+        <ResizableHandle withHandle />
 
         {/* Right Panel - Mark Scheme */}
-        <div className="w-1/2 min-w-0 flex flex-col">
-          <Card className="flex-1 flex flex-col min-h-0">
-            <CardHeader className="py-3">
+        <ResizablePanel defaultSize={50} minSize={25} maxSize={75} className="flex flex-col">
+          <Card className="flex-1 flex flex-col min-h-0 border-0 rounded-none">
+            <CardHeader className="py-3 border-b">
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Mark Scheme
@@ -457,7 +476,7 @@ export default function SubmissionDetailPage() {
                 Reference answers and marking criteria
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-auto pb-6">
+            <CardContent className="flex-1 overflow-auto pb-6 pt-4">
               <div className="space-y-4">
                 {/* PDF View */}
                 {submission.assessment.markSchemePdfUrl && (
@@ -483,8 +502,8 @@ export default function SubmissionDetailPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }

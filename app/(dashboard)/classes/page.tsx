@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
@@ -42,7 +42,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { formatDate } from "@/lib/utils";
 
 interface ClassData {
   id: string;
@@ -76,11 +75,7 @@ export default function ClassesPage() {
 
   const isTeacher = session?.user?.role === "TEACHER";
 
-  useEffect(() => {
-    fetchClasses();
-  }, []);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const endpoint = isTeacher ? "/api/classes" : "/api/student/classes";
       const response = await fetch(endpoint);
@@ -90,7 +85,7 @@ export default function ClassesPage() {
         setClasses(
           isTeacher
             ? data.classes || []
-            : (data.enrollments || []).map((e: any) => e.class)
+            : (data.enrollments || []).map((e: { class: ClassData }) => e.class)
         );
       }
     } catch (error) {
@@ -98,7 +93,11 @@ export default function ClassesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isTeacher]);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
 
   const handleCreateClass = async () => {
     if (!newClass.name.trim()) {

@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSoundEffects } from "@/hooks/use-sound-effects";
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Sun,
   Moon,
   Zap,

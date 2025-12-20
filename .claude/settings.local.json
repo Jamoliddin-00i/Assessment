@@ -22,7 +22,18 @@
       "mcp__context7__get-library-docs",
       "WebFetch(domain:ai.google.dev)",
       "Bash(npm install:*)",
-      "Bash(claude --yes)"
+      "Bash(claude --yes)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(head:*)",
+      "WebFetch(domain:www.alibabacloud.com)",
+      "Bash(powershell -Command \"Remove-Item -LiteralPath ''\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul'' -Force\")",
+      "Bash(cmd /c \"del /f \"\"\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul\"\"\")",
+      "Bash(powershell -Command \"& {Get-ChildItem -Force | Where-Object {$_Name -eq ''nul''}}\")",
+      "Bash(python -c \"import os; os.remove\\(r''D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")",
+      "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")"
     ]
   }
 }

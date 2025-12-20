@@ -44,3 +44,4 @@ prisma/*.db-journal
 
 # Tesseract OCR cache
 .tesseract-cache/
+nul

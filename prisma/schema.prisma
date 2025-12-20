@@ -64,14 +64,15 @@ model Enrollment {
 }
 
 model Assessment {
-  id              String       @id @default(cuid())
-  title           String
-  markScheme      String       // Extracted text from PDF
-  markSchemePdfUrl String?     // Original PDF URL
-  totalMarks      Int
-  status          AssessmentStatus @default(ACTIVE)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                  String       @id @default(cuid())
+  title               String
+  markScheme          String       // Extracted text from all mark scheme files
+  markSchemePdfUrl    String?      // Legacy: Original PDF URL (kept for backwards compatibility)
+  markSchemeFileUrls  String?      // JSON array of file URLs (supports PDF, images, Word, Excel)
+  totalMarks          Int
+  status              AssessmentStatus @default(ACTIVE)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   // Class relation
   classId     String

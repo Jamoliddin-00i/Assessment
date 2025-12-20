@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, Maximize2, Minimize2, AlertCircle } from "lucide-react";
@@ -51,11 +51,7 @@ export default function FeedbackPage() {
 
   const assessmentId = params.assessmentId as string;
 
-  useEffect(() => {
-    fetchSubmission();
-  }, [assessmentId]);
-
-  const fetchSubmission = async () => {
+  const fetchSubmission = useCallback(async () => {
     try {
       const response = await fetch(`/api/assessments/${assessmentId}/my-submission`);
 
@@ -65,7 +61,7 @@ export default function FeedbackPage() {
 
       const data = await response.json();
       setSubmission(data.submission);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load submission",
@@ -75,7 +71,11 @@ export default function FeedbackPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [assessmentId, toast, router]);
+
+  useEffect(() => {
+    fetchSubmission();
+  }, [fetchSubmission]);
 
   if (loading) {
     return <FeedbackSkeleton />;
