@@ -33,7 +33,8 @@
       "Bash(cmd /c \"del /f \"\"\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul\"\"\")",
       "Bash(powershell -Command \"& {Get-ChildItem -Force | Where-Object {$_Name -eq ''nul''}}\")",
       "Bash(python -c \"import os; os.remove\\(r''D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")",
-      "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")"
+      "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")",
+      "Bash(node -e:*)"
     ]
   }
 }

@@ -251,73 +251,65 @@ STUDENT'S ANSWERS (extracted handwritten content only):
 ${studentText}
 
 ═══════════════════════════════════════════════════════════════════════════════
-                    HOW TO INTERPRET THE MARK SCHEME
+                    CRITICAL GRADING PRINCIPLE
 ═══════════════════════════════════════════════════════════════════════════════
 
-The mark scheme contains:
-1. CRITERIA/EXPLANATIONS: Describes what makes an answer correct
-2. EXAMPLE ANSWERS: May show sample answers (marked with ★EXPECTED: ...★)
+⚠️ USE ONLY THE MARK SCHEME FOR GRADING - EVEN IF IT SEEMS WRONG!
 
-⚠️ IMPORTANT: Example answers are just EXAMPLES, not the only correct answers!
-The student's answer does NOT need to match the example word-for-word.
-You must REASON whether the student's answer satisfies the CRITERIA.
+The mark scheme is the SOLE source of truth for grading. You must:
+1. Grade EXACTLY according to the mark scheme, even if:
+   - The mark scheme answer seems incorrect to you
+   - You know a "better" answer exists
+   - The student's different answer is technically valid
+
+2. If mark scheme says X is correct, only X earns marks (not alternatives)
+3. DO NOT use your own knowledge to override the mark scheme
+
+EXCEPTION: When the mark scheme is UNCLEAR or AMBIGUOUS:
+- Use your reasoning to interpret what the mark scheme likely intends
+- Apply fair judgment based on the grading criteria given
+- Note in feedback when you had to interpret an unclear criterion
 
 ═══════════════════════════════════════════════════════════════════════════════
-                         FLEXIBLE GRADING RULES
+                    DETERMINING MARKS FROM MARK SCHEME
 ═══════════════════════════════════════════════════════════════════════════════
 
-1. READ the mark scheme criteria/explanation for each question
-2. EVALUATE if the student's answer meets the criteria, even if:
-   - Worded differently from the example
-   - Uses different but equivalent expressions
-   - Provides additional correct information
+Look at the mark scheme to determine:
+1. How many marks each question is worth (look for [1], [2], (1 mark), etc.)
+2. The total marks available (sum of all question marks)
+3. If marks are unclear, look for patterns like "1 mark per correct point"
 
-3. ANSWERS THAT MUST MATCH EXACTLY (no flexibility):
-   - Binary/truth tables (0s and 1s must match exactly)
-   - Pseudocode/code statements (logic must be correct)
-   - Specific numerical values without ranges
+═══════════════════════════════════════════════════════════════════════════════
+                         GRADING RULES
+═══════════════════════════════════════════════════════════════════════════════
+
+1. READ the mark scheme answer/criteria for each question
+2. COMPARE student's answer to the mark scheme EXACTLY
+3. Award marks ONLY if the answer matches the mark scheme criteria
+
+4. ANSWERS THAT MUST MATCH EXACTLY:
+   - Numerical values (unless mark scheme shows a range)
    - Multiple choice answers (A, B, C, D)
+   - Binary/truth tables
+   - Specific terms the mark scheme requires
    - Chemical formulas and equations
 
-4. ANSWERS WHERE FLEXIBILITY IS ALLOWED:
-   - Definitions and explanations (meaning matters, not exact words)
-   - Essay/short answer questions (assess understanding)
-   - Mathematical solutions (correct method + answer, even if steps differ)
-   - Diagrams (all required components present)
-   - Any question with criteria like "accept any valid answer"
+5. SOME FLEXIBILITY ALLOWED (if mark scheme doesn't require exact wording):
+   - Definitions where meaning is correct
+   - Explanations that convey the same concept
+   - Minor spelling variations of correct answer
 
-5. For "[BLANK - no answer]", award 0 marks (unanswered)
-
-6. Be lenient with:
-   - Minor spelling variations
-   - Equivalent mathematical expressions
-   - Synonyms and paraphrasing
-   - Alternative valid methods
-
-Total marks available: ${totalMarks}
+6. For "[BLANK - no answer]", award 0 marks (unanswered)
 
 ═══════════════════════════════════════════════════════════════════════════════
                          WORKING OUT / CALCULATION QUESTIONS
 ═══════════════════════════════════════════════════════════════════════════════
 
 For questions requiring working/calculations:
-1. The student's answer does NOT need to match the example step-by-step
-2. If student wrote relevant workings AND got correct answer → REASON through their solution
-3. If mark scheme explanation is unclear → REASON about the student's answer yourself
-4. Students may show abbreviated or different (but valid) methods
-
-REASONING APPROACH:
-- Look at what the student actually wrote
-- If they wrote workings that lead logically to the answer → valid
-- If they skipped some steps but showed key parts → reason if the logic holds
-- Don't require exact match to example - assess the LOGIC of their approach
-
-Example: Mark scheme shows "5 + 3 = 8, 8 × 2 = 16, Answer: 16"
-Student writes: "8 × 2 = 16" (skipped first step)
-→ REASON: They likely computed 5+3=8 mentally, then wrote 8×2=16. Logic is valid. Award marks.
-
-Example: Student shows different but valid method
-→ Assess if the logic is sound and leads to correct answer
+1. Check if mark scheme specifies METHOD marks (M) and ANSWER marks (A)
+2. If mark scheme shows working, check student's method follows similar logic
+3. If mark scheme only shows final answer, focus on whether student got that answer
+4. Use reasoning when mark scheme is unclear about partial credit
 
 ═══════════════════════════════════════════════════════════════════════════════
                            OUTPUT FORMAT
@@ -325,8 +317,8 @@ Example: Student shows different but valid method
 
 Respond in JSON format ONLY (no markdown code blocks):
 {
-  "score": <total marks awarded (0 to ${totalMarks})>,
-  "maxScore": ${totalMarks},
+  "score": <total marks awarded>,
+  "maxScore": <total marks available from mark scheme>,
   "feedback": "<2-3 sentence summary>",
   "breakdown": [
     {
@@ -334,21 +326,21 @@ Respond in JSON format ONLY (no markdown code blocks):
       "points": 2,
       "maxPoints": 3,
       "status": "partial",
-      "feedback": "<DETAILED: explain what was correct, what was wrong, and why>"
+      "feedback": "<DETAILED: what mark scheme required vs what student wrote>"
     }
   ]
 }
 
 ⚠️ FEEDBACK REQUIREMENTS:
 - Be DETAILED and HELPFUL in each question's feedback
-- Explain what the student got right
-- Explain what was wrong and why
-- For partial marks: explain what earned marks and what didn't
-- For calculation questions: note if method was valid even if steps were skipped
+- State what the mark scheme required
+- State what the student wrote
+- Explain why marks were awarded or not
+- If you used reasoning due to unclear mark scheme, note this
 
 IMPORTANT:
 - Only respond with valid JSON
-- Ensure score does not exceed ${totalMarks}
+- Determine maxScore from the mark scheme itself
 - Include ALL questions in the breakdown`;
 
     let response;
@@ -430,14 +422,16 @@ IMPORTANT:
       console.log("Truncation recovery successful - extracted score:", result.score);
     }
 
-    const validatedScore = Math.min(Math.max(0, result.score || 0), totalMarks);
+    // Use maxScore from mark scheme analysis, fallback to passed totalMarks if not provided
+    const maxScore = result.maxScore || totalMarks || 100;
+    const validatedScore = Math.min(Math.max(0, result.score || 0), maxScore);
 
-    console.log(`Grading complete: ${validatedScore}/${totalMarks}`);
+    console.log(`Grading complete: ${validatedScore}/${maxScore}`);
 
     return {
       score: validatedScore,
-      maxScore: totalMarks,
-      feedback: result.feedback || `Score: ${validatedScore}/${totalMarks}`,
+      maxScore: maxScore,
+      feedback: result.feedback || `Score: ${validatedScore}/${maxScore}`,
       breakdown: result.breakdown || [],
     };
   } catch (error) {
@@ -463,7 +457,7 @@ async function gradeImageVisually(
   markSchemeImages: { buffer: Buffer; mimeType: string }[],
   pageNumber: number,
   totalPages: number,
-  totalMarks: number
+  _totalMarks: number // Now determined from mark scheme, kept for signature compatibility
 ): Promise<{ questionsFound: QuestionBreakdown[] }> {
 
   const prompt = `You are grading page ${pageNumber} of ${totalPages} from a student's answer sheet.
@@ -476,10 +470,25 @@ I am providing you with:
 1. MARK SCHEME IMAGE(S) - These show the correct answers and marking criteria
 2. STUDENT ANSWER SHEET - This is page ${pageNumber} of the student's work
 
-YOUR TASK:
-Look at the MARK SCHEME to understand what the correct answers should be.
-Then look at the STUDENT'S ANSWER SHEET and find what they actually wrote.
-Compare them and award marks accordingly.
+═══════════════════════════════════════════════════════════════════════════════
+                    CRITICAL GRADING PRINCIPLE
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ USE ONLY THE MARK SCHEME FOR GRADING - EVEN IF IT SEEMS WRONG!
+
+The mark scheme is the SOLE source of truth. You must:
+1. Grade EXACTLY according to the mark scheme, even if:
+   - The mark scheme answer seems incorrect to you
+   - You know a "better" answer exists
+   - The student's different answer is technically valid
+
+2. If mark scheme says X is correct, only X earns marks
+3. DO NOT use your own knowledge to override the mark scheme
+
+EXCEPTION: When the mark scheme is UNCLEAR or AMBIGUOUS:
+- Use your reasoning to interpret what the mark scheme likely intends
+- Apply fair judgment based on the grading criteria given
+- Note in feedback when you had to interpret an unclear criterion
 
 ═══════════════════════════════════════════════════════════════════════════════
                     HOW TO IDENTIFY EXPECTED ANSWERS
@@ -490,11 +499,6 @@ In the mark scheme, expected answers may be shown as:
 - Text after "Answer:", "Ans:", "A:"
 - Numbers in boxes or underlined
 - Worked examples or solutions
-- For fill-in-the-blank questions: the complete sentence with blanks filled in
-  (identify which parts are the filled answers vs the given text)
-
-If the mark scheme shows an example or worked solution, use that to determine
-what the student's answer should look like.
 
 ═══════════════════════════════════════════════════════════════════════════════
                     HOW TO IDENTIFY STUDENT'S ANSWERS
@@ -506,10 +510,7 @@ On the student's answer sheet, their answers are what they have ADDED:
 - Calculations and working
 - Circled or ticked options
 
-⚠️ IMPORTANT: If the answer area is BLANK (no writing by student),
-that question is UNANSWERED = 0 marks.
-
-Do NOT confuse pre-printed question text with student answers.
+⚠️ If the answer area is BLANK = UNANSWERED = 0 marks.
 
 ═══════════════════════════════════════════════════════════════════════════════
                          GRADING RULES
@@ -518,17 +519,11 @@ Do NOT confuse pre-printed question text with student answers.
 1. For each question on this page:
    - Find the expected answer in the mark scheme
    - Find what the student wrote
-   - Compare them
+   - Award marks ONLY if it matches the mark scheme
 
-2. Award marks based on:
-   - Correct answer matching mark scheme = full marks
-   - Partially correct = partial marks (if allowed)
-   - Incorrect or blank = 0 marks
-
-3. MATHEMATICAL GRADING:
+2. MATHEMATICAL GRADING:
    - M marks (Method): Correct approach/formula
    - A marks (Accuracy): Correct numerical answer
-   - B marks: Independent marks for specific values
    - ft (follow through): Only if mark scheme allows
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -541,9 +536,9 @@ Respond in JSON format ONLY (no markdown, no code blocks):
     {
       "questionId": "<question number like '1a' or '2b)ii'>",
       "points": <marks awarded>,
-      "maxPoints": <max marks for this question>,
+      "maxPoints": <max marks for this question from mark scheme>,
       "status": "correct" | "partial" | "incorrect" | "unanswered",
-      "feedback": "<describe: expected answer from mark scheme vs what student wrote>",
+      "feedback": "<what mark scheme required vs what student wrote>",
       "deductions": [
         {
           "reason": "<why marks were lost>",
@@ -556,12 +551,8 @@ Respond in JSON format ONLY (no markdown, no code blocks):
 
 RULES:
 - Only grade questions visible on THIS page
-- "unanswered" = student left it blank = 0 marks
-- "incorrect" = student wrote something but it doesn't match expected answer
-- Always describe what was expected vs what student wrote
+- Determine maxPoints from the mark scheme itself
 - If no questions found on this page, return {"questionsFound": []}
-
-Total marks for the entire assessment: ${totalMarks}
 
 IMPORTANT: Only respond with valid JSON.`;
 
@@ -644,37 +635,33 @@ I am providing you with:
 1. MARK SCHEME (PDF/images) - Shows the correct answers and marking criteria
 2. STUDENT ANSWER SHEETS - ${studentImages.length} page(s) of the student's work
 
-YOUR TASK:
-Look at the MARK SCHEME to understand what the correct answers should be.
-Then look at each STUDENT ANSWER SHEET page and find what they actually wrote.
-Compare them and award marks accordingly.
-
 ═══════════════════════════════════════════════════════════════════════════════
-                    HOW TO IDENTIFY EXPECTED ANSWERS
+                    CRITICAL GRADING PRINCIPLE
 ═══════════════════════════════════════════════════════════════════════════════
 
-In the mark scheme, expected answers may be shown as:
-- Bold or highlighted text
-- Text after "Answer:", "Ans:", "A:"
-- Numbers in boxes or underlined
-- Worked examples or solutions
-- For fill-in-the-blank: the complete sentence with blanks filled in
+⚠️ USE ONLY THE MARK SCHEME FOR GRADING - EVEN IF IT SEEMS WRONG!
 
-If the mark scheme shows an example or worked solution, use that to determine
-what the student's answer should look like.
+The mark scheme is the SOLE source of truth. You must:
+1. Grade EXACTLY according to the mark scheme, even if:
+   - The mark scheme answer seems incorrect to you
+   - You know a "better" answer exists
+   - The student's different answer is technically valid
+
+2. If mark scheme says X is correct, only X earns marks
+3. DO NOT use your own knowledge to override the mark scheme
+
+EXCEPTION: When the mark scheme is UNCLEAR or AMBIGUOUS:
+- Use your reasoning to interpret what the mark scheme likely intends
+- Apply fair judgment based on the grading criteria given
+- Note in feedback when you had to interpret an unclear criterion
 
 ═══════════════════════════════════════════════════════════════════════════════
-                    HOW TO IDENTIFY STUDENT'S ANSWERS
+                    DETERMINING MARKS FROM MARK SCHEME
 ═══════════════════════════════════════════════════════════════════════════════
 
-On the student's answer sheet, their answers are what they have ADDED:
-- Handwritten text (pen/pencil)
-- Filled boxes or blanks
-- Calculations and working
-- Circled or ticked options
-
-⚠️ IMPORTANT: If the answer area is BLANK (no writing by student),
-that question is UNANSWERED = 0 marks.
+Look at the mark scheme to determine:
+1. How many marks each question is worth
+2. The total marks available (sum of all question marks)
 
 ═══════════════════════════════════════════════════════════════════════════════
                          GRADING RULES
@@ -683,14 +670,12 @@ that question is UNANSWERED = 0 marks.
 1. For each question:
    - Find the expected answer in the mark scheme
    - Find what the student wrote
-   - Compare them
+   - Award marks ONLY if it matches the mark scheme
 
 2. Award marks based on:
-   - Correct answer = full marks
-   - Partially correct = partial marks (if allowed)
-   - Incorrect or blank = 0 marks
-
-Total marks: ${totalMarks}
+   - Matches mark scheme = full marks
+   - Partially matches = partial marks (if mark scheme allows)
+   - Doesn't match or blank = 0 marks
 
 ═══════════════════════════════════════════════════════════════════════════════
                            OUTPUT FORMAT
@@ -699,15 +684,15 @@ Total marks: ${totalMarks}
 Respond in JSON format ONLY:
 {
   "score": <total marks awarded>,
-  "maxScore": ${totalMarks},
+  "maxScore": <total marks from mark scheme>,
   "feedback": "<2-3 sentence summary>",
   "breakdown": [
     {
       "questionId": "<question number>",
       "points": <marks awarded>,
-      "maxPoints": <max marks>,
+      "maxPoints": <max marks from mark scheme>,
       "status": "correct" | "partial" | "incorrect" | "unanswered",
-      "feedback": "<expected vs actual answer>"
+      "feedback": "<what mark scheme required vs what student wrote>"
     }
   ]
 }
@@ -745,7 +730,7 @@ IMPORTANT: Only respond with valid JSON.`;
   let response;
   try {
     response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: GEMINI_GRADING_MODEL,
       contents: contents,
     });
   } catch (apiError) {
@@ -785,12 +770,14 @@ IMPORTANT: Only respond with valid JSON.`;
     throw new Error(`Failed to parse visual grading response as JSON: ${parseError}`);
   }
 
-  const validatedScore = Math.min(Math.max(0, result.score || 0), totalMarks);
+  // Use maxScore from mark scheme analysis, fallback to passed totalMarks
+  const maxScore = result.maxScore || totalMarks || 100;
+  const validatedScore = Math.min(Math.max(0, result.score || 0), maxScore);
 
   return {
     score: validatedScore,
-    maxScore: totalMarks,
-    feedback: result.feedback || `Score: ${validatedScore}/${totalMarks}`,
+    maxScore: maxScore,
+    feedback: result.feedback || `Score: ${validatedScore}/${maxScore}`,
     breakdown: result.breakdown || [],
   };
 }
@@ -848,9 +835,11 @@ export async function gradeSubmission(
       }
     }
 
-    // Calculate total score
+    // Calculate total score and max from breakdown
     const totalScore = allBreakdowns.reduce((sum, q) => sum + (q.points || 0), 0);
-    const validatedScore = Math.min(Math.max(0, totalScore), totalMarks);
+    const maxFromBreakdown = allBreakdowns.reduce((sum, q) => sum + (q.maxPoints || 0), 0);
+    const maxScore = maxFromBreakdown > 0 ? maxFromBreakdown : (totalMarks || 100);
+    const validatedScore = Math.min(Math.max(0, totalScore), maxScore);
 
     // Generate overall feedback
     const correctCount = allBreakdowns.filter(q => q.status === "correct").length;
@@ -858,17 +847,17 @@ export async function gradeSubmission(
     const incorrectCount = allBreakdowns.filter(q => q.status === "incorrect").length;
     const unansweredCount = allBreakdowns.filter(q => q.status === "unanswered").length;
 
-    let feedback = `Score: ${validatedScore}/${totalMarks}. `;
+    let feedback = `Score: ${validatedScore}/${maxScore}. `;
     if (correctCount > 0) feedback += `${correctCount} correct. `;
     if (partialCount > 0) feedback += `${partialCount} partial. `;
     if (incorrectCount > 0) feedback += `${incorrectCount} incorrect. `;
     if (unansweredCount > 0) feedback += `${unansweredCount} unanswered.`;
 
-    console.log(`Grading complete: ${validatedScore}/${totalMarks}`);
+    console.log(`Grading complete: ${validatedScore}/${maxScore}`);
 
     return {
       score: validatedScore,
-      maxScore: totalMarks,
+      maxScore: maxScore,
       feedback: feedback.trim(),
       breakdown: allBreakdowns,
     };

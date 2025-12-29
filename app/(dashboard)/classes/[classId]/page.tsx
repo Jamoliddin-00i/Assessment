@@ -242,7 +242,9 @@ export default function ClassDetailPage() {
                         <div className="space-y-1">
                           <h3 className="font-medium">{assessment.title}</h3>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>Total: {assessment.totalMarks} marks</span>
+                            {assessment.totalMarks > 0 && (
+                              <span>Total: {assessment.totalMarks} marks</span>
+                            )}
                             {assessment.dueDate && (
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />

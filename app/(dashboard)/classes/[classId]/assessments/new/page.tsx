@@ -58,7 +58,6 @@ export default function NewAssessmentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState("");
-  const [totalMarks, setTotalMarks] = useState("");
   const [markSchemeFiles, setMarkSchemeFiles] = useState<File[]>([]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,22 +130,12 @@ export default function NewAssessmentPage() {
       return;
     }
 
-    if (!totalMarks || parseInt(totalMarks) <= 0) {
-      toast({
-        title: "Total marks required",
-        description: "Please enter a valid total marks value.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     playGlobalSound("submit");
 
     try {
       const formData = new FormData();
       formData.append("title", title);
-      formData.append("totalMarks", totalMarks);
 
       // Append all mark scheme files
       markSchemeFiles.forEach((file) => {
@@ -217,19 +206,6 @@ export default function NewAssessmentPage() {
                 placeholder="e.g., Chapter 5 Quiz"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="totalMarks">Total Marks *</Label>
-              <Input
-                id="totalMarks"
-                type="number"
-                min="1"
-                placeholder="e.g., 100"
-                value={totalMarks}
-                onChange={(e) => setTotalMarks(e.target.value)}
                 required
               />
             </div>

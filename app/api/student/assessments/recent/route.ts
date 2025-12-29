@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             score: true,
+            maxScore: true,
             status: true,
           },
         },

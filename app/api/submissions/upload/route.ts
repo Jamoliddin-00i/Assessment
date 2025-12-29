@@ -267,18 +267,19 @@ async function processSubmission(
     // Format feedback as markdown
     const formattedFeedback = formatFeedbackAsMarkdown(gradingResult);
 
-    // Update submission with results
+    // Update submission with results (use maxScore from grading)
     await prisma.submission.update({
       where: { id: submissionId },
       data: {
         score: gradingResult.score,
+        maxScore: gradingResult.maxScore,
         feedback: formattedFeedback,
         status: "GRADED",
         gradedAt: new Date(),
       },
     });
 
-    console.log(`Submission ${submissionId} graded: ${gradingResult.score}/${totalMarks}`);
+    console.log(`Submission ${submissionId} graded: ${gradingResult.score}/${gradingResult.maxScore}`);
   } catch (error) {
     console.error(`Error processing submission ${submissionId}:`, error);
 

@@ -30,11 +30,9 @@ const QVQ_MODEL = "qvq-max";
 // Gemini 2.0 Flash Lite for fast page detection (cheapest & fastest)
 const GEMINI_PAGE_DETECTION_MODEL = "gemini-2.0-flash-lite";
 
-// Gemini 3 Flash Preview for student work OCR (fast + high quality)
-const GEMINI_STUDENT_OCR_MODEL = "gemini-3-flash-preview";
-
-// Gemini 2.5 Pro Preview for high-quality PDF OCR (best extraction quality)
-const GEMINI_PRO_OCR_MODEL = "gemini-2.5-pro-preview-05-06";
+// Gemini 2.5 Flash Preview for PDF/mark scheme OCR (best price/performance)
+// Student handwritten OCR uses QVQ-Max (QWEN) instead
+const GEMINI_PRO_OCR_MODEL = "gemini-2.5-flash-preview-09-2025";
 
 // Initialize Gemini client
 function getGeminiClient(): GoogleGenAI {
@@ -946,7 +944,7 @@ OUTPUT: Return ONLY the student's HANDWRITTEN answers, organized by question num
 
 /**
  * Extract ONLY handwritten content from a single student answer sheet image
- * Uses Gemini 2.0 Flash for fast and accurate extraction
+ * Uses QVQ-Max (QWEN) for best handwriting recognition
  */
 async function extractHandwrittenFromImage(
   buffer: Buffer,
@@ -954,29 +952,28 @@ async function extractHandwrittenFromImage(
   pageNumber: number
 ): Promise<string> {
   try {
-    const ai = getGeminiClient();
     const base64Data = buffer.toString("base64");
+    const imageUrl = `${getMimePrefix(mimeType)}${base64Data}`;
 
     const prompt = `${HANDWRITTEN_ONLY_OCR_PROMPT}
 
 This is page ${pageNumber} of the student's answer sheet.`;
 
-    console.log(`  Using Gemini 2.0 Flash for page ${pageNumber}...`);
+    console.log(`  Using QVQ-Max (QWEN) for page ${pageNumber}...`);
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_STUDENT_OCR_MODEL,
-      contents: [
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType,
-          },
-        },
-        prompt,
-      ],
-    });
+    const content: Array<{type: string; text?: string; image_url?: {url: string}}> = [
+      { type: "text", text: prompt },
+      {
+        type: "image_url",
+        image_url: { url: imageUrl },
+      },
+    ];
 
-    return response.text || "";
+    const text = await callQvqApi([
+      { role: "user", content: content },
+    ]);
+
+    return text || "";
   } catch (error) {
     console.error(`Failed to extract handwritten content from page ${pageNumber}:`, error);
     return `[Error extracting page ${pageNumber}]`;
@@ -1630,7 +1627,7 @@ export async function extractTextFromMultipleMarkSchemeFiles(
         const base64Data = file.buffer.toString("base64");
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.0-flash",
+          model: GEMINI_PRO_OCR_MODEL,
           contents: [
             {
               inlineData: {
@@ -1667,7 +1664,7 @@ export async function extractTextFromPdf(buffer: Buffer): Promise<string> {
     const base64Data = buffer.toString("base64");
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: GEMINI_PRO_OCR_MODEL,
       contents: [
         {
           inlineData: {

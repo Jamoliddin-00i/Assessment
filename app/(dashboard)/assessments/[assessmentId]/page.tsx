@@ -233,7 +233,11 @@ export default function AssessmentPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{assessment.totalMarks}</div>
+            <div className="text-2xl font-bold">
+              {assessment.totalMarks > 0
+                ? assessment.totalMarks
+                : (assessment.submissions.find(s => s.maxScore)?.maxScore ?? "From Mark Scheme")}
+            </div>
           </CardContent>
         </Card>
         {assessment.dueDate && (
@@ -304,14 +308,14 @@ export default function AssessmentPage() {
                         <span
                           className={`text-2xl font-bold ${getScoreColor(
                             mySubmission.score || 0,
-                            assessment.totalMarks
+                            mySubmission.maxScore || assessment.totalMarks
                           )}`}
                         >
-                          {mySubmission.score}/{assessment.totalMarks}
+                          {mySubmission.score}/{mySubmission.maxScore || assessment.totalMarks}
                         </span>
                         <p className="text-sm text-muted-foreground">
                           {Math.round(
-                            ((mySubmission.score || 0) / assessment.totalMarks) * 100
+                            ((mySubmission.score || 0) / (mySubmission.maxScore || assessment.totalMarks || 1)) * 100
                           )}
                           %
                         </p>
@@ -410,10 +414,10 @@ export default function AssessmentPage() {
                               <span
                                 className={`text-lg font-bold ${getScoreColor(
                                   submission.score || 0,
-                                  assessment.totalMarks
+                                  submission.maxScore || assessment.totalMarks
                                 )}`}
                               >
-                                {submission.score}/{assessment.totalMarks}
+                                {submission.score}/{submission.maxScore || assessment.totalMarks}
                               </span>
                             ) : submission.status === "PROCESSING" ? (
                               <Badge variant="warning">Processing</Badge>

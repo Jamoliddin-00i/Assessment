@@ -62,6 +62,7 @@ interface RecentAssessment {
   submissions: {
     id: string;
     score: number | null;
+    maxScore: number | null;
     status: string;
   }[];
 }
@@ -344,10 +345,10 @@ export function StudentDashboard() {
                               <span
                                 className={`text-lg font-bold ${getScoreColor(
                                   submission.score || 0,
-                                  assessment.totalMarks
+                                  submission.maxScore || assessment.totalMarks
                                 )}`}
                               >
-                                {submission.score}/{assessment.totalMarks}
+                                {submission.score}/{submission.maxScore || assessment.totalMarks}
                               </span>
                             </div>
                           ) : (

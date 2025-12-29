@@ -37,7 +37,6 @@ export async function POST(
 
     const formData = await request.formData();
     const title = formData.get("title") as string;
-    const totalMarks = parseInt(formData.get("totalMarks") as string, 10);
 
     // Get all mark scheme files (supports multiple files)
     const markSchemeFiles = formData.getAll("markSchemeFiles") as File[];
@@ -45,13 +44,6 @@ export async function POST(
     if (!title || title.length < 2) {
       return NextResponse.json(
         { error: "Title must be at least 2 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (!totalMarks || totalMarks < 1) {
-      return NextResponse.json(
-        { error: "Total marks must be at least 1" },
         { status: 400 }
       );
     }
@@ -126,7 +118,7 @@ export async function POST(
         markScheme: markSchemeText,
         markSchemePdfUrl: savedFileUrls[0], // First file URL for backwards compatibility
         markSchemeFileUrls: JSON.stringify(savedFileUrls), // All file URLs
-        totalMarks,
+        totalMarks: 0, // Will be determined from mark scheme during grading
         classId,
       },
     });
