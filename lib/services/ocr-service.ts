@@ -30,8 +30,8 @@ const QVQ_MODEL = "qvq-max";
 // Gemini 2.0 Flash Lite for fast page detection (cheapest & fastest)
 const GEMINI_PAGE_DETECTION_MODEL = "gemini-2.0-flash-lite";
 
-// Gemini 2.5 Flash Preview for PDF/mark scheme OCR (best price/performance)
-// Student handwritten OCR uses QVQ-Max (QWEN) instead
+// Gemini 2.5 Flash Preview for all OCR tasks (best price/performance)
+// Used for: mark scheme OCR (PDF & images), student handwritten OCR
 const GEMINI_PRO_OCR_MODEL = "gemini-2.5-flash-preview-09-2025";
 
 // Initialize Gemini client
@@ -600,7 +600,7 @@ function validateConsecutivePages(pageNumbers: (number | null)[]): boolean {
  * This function ONLY detects page numbers and sorts images.
  * No OCR is performed - the sorted images are sent directly to grading.
  *
- * Pipeline: Student images → Gemini page detection → Sorted images → QVQ-Max grading
+ * Pipeline: Student images → Gemini page detection → Sorted images → Gemini 2.5 Flash OCR
  *
  * VALIDATION: Page numbers must be consecutive (no gaps).
  * If pages 2,5,13 detected instead of 2,3,4 → likely question numbers, fall back to original order.
@@ -944,7 +944,7 @@ OUTPUT: Return ONLY the student's HANDWRITTEN answers, organized by question num
 
 /**
  * Extract ONLY handwritten content from a single student answer sheet image
- * Uses QVQ-Max (QWEN) for best handwriting recognition
+ * Uses Gemini 2.5 Flash for fast and reliable handwriting recognition
  */
 async function extractHandwrittenFromImage(
   buffer: Buffer,
@@ -953,27 +953,33 @@ async function extractHandwrittenFromImage(
 ): Promise<string> {
   try {
     const base64Data = buffer.toString("base64");
-    const imageUrl = `${getMimePrefix(mimeType)}${base64Data}`;
 
     const prompt = `${HANDWRITTEN_ONLY_OCR_PROMPT}
 
 This is page ${pageNumber} of the student's answer sheet.`;
 
-    console.log(`  Using QVQ-Max (QWEN) for page ${pageNumber}...`);
+    console.log(`  Using Gemini 2.5 Flash for page ${pageNumber}...`);
 
-    const content: Array<{type: string; text?: string; image_url?: {url: string}}> = [
-      { type: "text", text: prompt },
-      {
-        type: "image_url",
-        image_url: { url: imageUrl },
-      },
-    ];
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: GEMINI_PRO_OCR_MODEL,
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data,
+              },
+            },
+          ],
+        },
+      ],
+    });
 
-    const text = await callQvqApi([
-      { role: "user", content: content },
-    ]);
-
-    return text || "";
+    return response.text || "";
   } catch (error) {
     console.error(`Failed to extract handwritten content from page ${pageNumber}:`, error);
     return `[Error extracting page ${pageNumber}]`;
@@ -982,8 +988,8 @@ This is page ${pageNumber} of the student's answer sheet.`;
 
 /**
  * Extract handwritten content from student submission images
- * 1. Sorts images by page number (using Gemini)
- * 2. Extracts ONLY handwritten content from each page (using QVQ-Max)
+ * 1. Sorts images by page number (using Gemini 2.0 Flash Lite)
+ * 2. Extracts ONLY handwritten content from each page (using Gemini 2.5 Flash)
  *
  * Returns: sorted image indices + combined extracted text
  */

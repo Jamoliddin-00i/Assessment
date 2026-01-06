@@ -38,7 +38,7 @@ export function useConfetti() {
       origin: { x: 0.5, y: 0.5 },
     };
 
-    playGlobalSound("celebrate");
+    playGlobalSound("achievement");
     confetti({
       ...defaults,
       ...options,
@@ -46,7 +46,7 @@ export function useConfetti() {
   }, []);
 
   const fireSchoolPride = useCallback(() => {
-    playGlobalSound("celebrate");
+    playGlobalSound("achievement");
     const end = Date.now() + 3 * 1000;
     const colors = ["#3b82f6", "#8b5cf6", "#ec4899"];
 
@@ -105,7 +105,7 @@ export function useConfetti() {
   }, []);
 
   const fireRealistic = useCallback(() => {
-    playGlobalSound("celebrate");
+    playGlobalSound("achievement");
     const count = 200;
     const defaults = {
       origin: { y: 0.7 },
@@ -144,7 +144,7 @@ export function useConfetti() {
   }, []);
 
   const fireSideCannons = useCallback(() => {
-    playGlobalSound("celebrate");
+    playGlobalSound("achievement");
     const end = Date.now() + 1000;
 
     (function frame() {
@@ -170,7 +170,7 @@ export function useConfetti() {
   }, []);
 
   const fireEmoji = useCallback((emoji: string = "🎉") => {
-    playGlobalSound("celebrate");
+    playGlobalSound("achievement");
     const scalar = 2;
     const emojiShape = confetti.shapeFromText({ text: emoji, scalar });
 

@@ -55,7 +55,7 @@ const Toast = React.forwardRef<
       } else if (variant === "destructive") {
         playGlobalSound("error");
       } else {
-        playGlobalSound("notification");
+        playGlobalSound("open");
       }
     }
     onOpenChange?.(open);

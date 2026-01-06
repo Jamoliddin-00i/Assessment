@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
+import { ThemeBackground } from "@/components/theme-background";
 
 export default async function DashboardLayout({
   children,
@@ -14,9 +15,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <ThemeBackground />
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-6 md:px-10 lg:px-16 py-6">{children}</main>
+      <main className="mx-auto max-w-[1600px] px-6 md:px-10 lg:px-16 py-6 relative z-10">{children}</main>
     </div>
   );
 }

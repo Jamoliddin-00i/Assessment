@@ -33,7 +33,7 @@ const TabsTrigger = React.forwardRef<
       className
     )}
     onClick={(e) => {
-      playGlobalSound("navigate");
+      playGlobalSound("select");
       onClick?.(e);
     }}
     {...props}

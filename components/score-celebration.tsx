@@ -67,7 +67,7 @@ export function ScoreCelebration({
       }
     };
 
-    playSound("whoosh");
+    playSound("success");
     requestAnimationFrame(animate);
   }, [show, score, isPerfect, isExcellent, isGood, fireRealistic, fireStars, fireSchoolPride, fireEmoji, playSound, onComplete]);
 

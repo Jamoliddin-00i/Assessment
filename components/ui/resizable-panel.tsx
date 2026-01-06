@@ -22,12 +22,19 @@ interface ResizableHandleProps {
   withHandle?: boolean;
 }
 
+interface PanelConfig {
+  defaultSize: number;
+  minSize: number;
+  maxSize: number;
+}
+
 interface PanelContextValue {
   direction: "horizontal" | "vertical";
   sizes: number[];
   setSizes: React.Dispatch<React.SetStateAction<number[]>>;
-  registerPanel: (index: number, defaultSize: number, minSize: number, maxSize: number) => void;
-  panelConfigs: { minSize: number; maxSize: number }[];
+  registerPanel: (index: number, config: PanelConfig) => void;
+  panelConfigs: PanelConfig[];
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const PanelContext = React.createContext<PanelContextValue | null>(null);
@@ -38,20 +45,21 @@ export function ResizablePanelGroup({
   direction = "horizontal",
 }: ResizablePanelGroupProps) {
   const [sizes, setSizes] = React.useState<number[]>([]);
-  const [panelConfigs, setPanelConfigs] = React.useState<{ minSize: number; maxSize: number }[]>([]);
+  const [panelConfigs, setPanelConfigs] = React.useState<PanelConfig[]>([]);
   const initialized = React.useRef(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   const registerPanel = React.useCallback(
-    (index: number, defaultSize: number, minSize: number, maxSize: number) => {
+    (index: number, config: PanelConfig) => {
       if (!initialized.current) {
         setSizes((prev) => {
           const newSizes = [...prev];
-          newSizes[index] = defaultSize;
+          newSizes[index] = config.defaultSize;
           return newSizes;
         });
         setPanelConfigs((prev) => {
           const newConfigs = [...prev];
-          newConfigs[index] = { minSize, maxSize };
+          newConfigs[index] = config;
           return newConfigs;
         });
       }
@@ -64,8 +72,9 @@ export function ResizablePanelGroup({
   }, []);
 
   return (
-    <PanelContext.Provider value={{ direction, sizes, setSizes, registerPanel, panelConfigs }}>
+    <PanelContext.Provider value={{ direction, sizes, setSizes, registerPanel, panelConfigs, containerRef }}>
       <div
+        ref={containerRef}
         className={cn(
           "flex h-full w-full",
           direction === "horizontal" ? "flex-row" : "flex-col",
@@ -80,34 +89,39 @@ export function ResizablePanelGroup({
 
 export function ResizablePanel({
   children,
-  defaultSize = 50,
-  minSize = 20,
+  defaultSize = 33,
+  minSize = 10,
   maxSize = 80,
   className,
 }: ResizablePanelProps) {
   const context = React.useContext(PanelContext);
   const indexRef = React.useRef(-1);
+  const panelRef = React.useRef<HTMLDivElement>(null);
 
   if (!context) {
     throw new Error("ResizablePanel must be used within ResizablePanelGroup");
   }
 
-  const { direction, sizes, registerPanel } = context;
+  const { direction, sizes, registerPanel, containerRef } = context;
 
   React.useEffect(() => {
-    // Find this panel's index based on order
-    const panels = document.querySelectorAll("[data-resizable-panel]");
+    const container = containerRef.current;
+    if (!container || !panelRef.current) return;
+
+    const panels = container.querySelectorAll("[data-resizable-panel]");
+    let myIndex = -1;
     panels.forEach((panel, i) => {
       if (panel === panelRef.current) {
-        indexRef.current = i;
+        myIndex = i;
       }
     });
-    if (indexRef.current >= 0) {
-      registerPanel(indexRef.current, defaultSize, minSize, maxSize);
-    }
-  }, [defaultSize, minSize, maxSize, registerPanel]);
 
-  const panelRef = React.useRef<HTMLDivElement>(null);
+    if (myIndex >= 0 && indexRef.current !== myIndex) {
+      indexRef.current = myIndex;
+      registerPanel(myIndex, { defaultSize, minSize, maxSize });
+    }
+  }, [defaultSize, minSize, maxSize, registerPanel, containerRef]);
+
   const size = sizes[indexRef.current] ?? defaultSize;
 
   return (
@@ -135,18 +149,39 @@ export function ResizableHandle({ className, withHandle = true }: ResizableHandl
     throw new Error("ResizableHandle must be used within ResizablePanelGroup");
   }
 
-  const { direction, sizes, setSizes, panelConfigs } = context;
+  const { direction, sizes, setSizes, panelConfigs, containerRef } = context;
+
+  // Find which handle this is by counting previous handles in DOM
+  const getHandleIndex = React.useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !handleRef.current) return 0;
+
+    const handles = container.querySelectorAll("[data-resizable-handle]");
+    let myIndex = 0;
+    handles.forEach((handle, i) => {
+      if (handle === handleRef.current) {
+        myIndex = i;
+      }
+    });
+    return myIndex;
+  }, [containerRef]);
 
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       setIsDragging(true);
 
+      // This handle is between panel[handleIndex] and panel[handleIndex + 1]
+      const handleIndex = getHandleIndex();
+      const leftPanelIndex = handleIndex;
+      const rightPanelIndex = handleIndex + 1;
+
       const startPos = direction === "horizontal" ? e.clientX : e.clientY;
-      const containerRect = handleRef.current?.parentElement?.getBoundingClientRect();
+      const container = containerRef.current;
 
-      if (!containerRect) return;
+      if (!container) return;
 
+      const containerRect = container.getBoundingClientRect();
       const containerSize = direction === "horizontal" ? containerRect.width : containerRect.height;
       const startSizes = [...sizes];
 
@@ -155,32 +190,48 @@ export function ResizableHandle({ className, withHandle = true }: ResizableHandl
         const delta = ((currentPos - startPos) / containerSize) * 100;
 
         const newSizes = [...startSizes];
-        const leftConfig = panelConfigs[0] || { minSize: 20, maxSize: 80 };
-        const rightConfig = panelConfigs[1] || { minSize: 20, maxSize: 80 };
 
-        let newLeftSize = startSizes[0] + delta;
-        let newRightSize = startSizes[1] - delta;
+        const leftConfig = panelConfigs[leftPanelIndex] || { minSize: 10, maxSize: 80 };
+        const rightConfig = panelConfigs[rightPanelIndex] || { minSize: 10, maxSize: 80 };
 
-        // Apply constraints
+        let newLeftSize = startSizes[leftPanelIndex] + delta;
+        let newRightSize = startSizes[rightPanelIndex] - delta;
+
+        // Calculate total of other panels (not the two being resized)
+        let otherPanelsTotal = 0;
+        for (let i = 0; i < startSizes.length; i++) {
+          if (i !== leftPanelIndex && i !== rightPanelIndex) {
+            otherPanelsTotal += startSizes[i];
+          }
+        }
+        const availableSpace = 100 - otherPanelsTotal;
+
+        // Apply constraints - only for the two adjacent panels
         if (newLeftSize < leftConfig.minSize) {
           newLeftSize = leftConfig.minSize;
-          newRightSize = 100 - newLeftSize;
-        }
-        if (newLeftSize > leftConfig.maxSize) {
-          newLeftSize = leftConfig.maxSize;
-          newRightSize = 100 - newLeftSize;
+          newRightSize = availableSpace - newLeftSize;
         }
         if (newRightSize < rightConfig.minSize) {
           newRightSize = rightConfig.minSize;
-          newLeftSize = 100 - newRightSize;
-        }
-        if (newRightSize > rightConfig.maxSize) {
-          newRightSize = rightConfig.maxSize;
-          newLeftSize = 100 - newRightSize;
+          newLeftSize = availableSpace - newRightSize;
         }
 
-        newSizes[0] = newLeftSize;
-        newSizes[1] = newRightSize;
+        // Cap at max sizes
+        if (newLeftSize > availableSpace - rightConfig.minSize) {
+          newLeftSize = availableSpace - rightConfig.minSize;
+          newRightSize = rightConfig.minSize;
+        }
+        if (newRightSize > availableSpace - leftConfig.minSize) {
+          newRightSize = availableSpace - leftConfig.minSize;
+          newLeftSize = leftConfig.minSize;
+        }
+
+        // Ensure we don't go below 0
+        if (newLeftSize < 0) newLeftSize = 0;
+        if (newRightSize < 0) newRightSize = 0;
+
+        newSizes[leftPanelIndex] = newLeftSize;
+        newSizes[rightPanelIndex] = newRightSize;
         setSizes(newSizes);
       };
 
@@ -197,14 +248,15 @@ export function ResizableHandle({ className, withHandle = true }: ResizableHandl
       document.body.style.cursor = direction === "horizontal" ? "col-resize" : "row-resize";
       document.body.style.userSelect = "none";
     },
-    [direction, sizes, setSizes, panelConfigs]
+    [direction, sizes, setSizes, panelConfigs, getHandleIndex, containerRef]
   );
 
   return (
     <div
       ref={handleRef}
+      data-resizable-handle
       className={cn(
-        "relative flex items-center justify-center transition-all duration-200",
+        "relative flex items-center justify-center transition-all duration-200 flex-shrink-0",
         direction === "horizontal"
           ? "w-3 cursor-col-resize group"
           : "h-3 cursor-row-resize group",
@@ -255,8 +307,7 @@ export function ResizableHandle({ className, withHandle = true }: ResizableHandl
               <div
                 key={i}
                 className={cn(
-                  "rounded-full transition-all duration-300",
-                  direction === "horizontal" ? "w-1 h-1" : "w-1 h-1",
+                  "rounded-full transition-all duration-300 w-1 h-1",
                   isDragging || isHovered
                     ? "bg-primary-foreground"
                     : "bg-muted-foreground/50"

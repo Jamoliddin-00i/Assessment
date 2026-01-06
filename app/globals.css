@@ -833,11 +833,13 @@ body {
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite;
+  will-change: transform;
 }
 
 .animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: pulse-glow 4s ease-in-out infinite;
+  will-change: opacity, box-shadow;
 }
 
 .animate-shimmer {
@@ -1056,4 +1058,290 @@ body {
 [data-theme="aurora"] .card {
   border: 1px solid hsl(var(--primary) / 0.2);
   box-shadow: 0 0 30px hsl(var(--primary) / 0.1);
+}
+
+/* ==================== THEME BACKGROUNDS ==================== */
+
+/* Base theme gradient background */
+.theme-gradient-bg {
+  background: radial-gradient(ellipse at 20% 20%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, hsl(var(--secondary) / 0.1) 0%, transparent 50%);
+}
+
+/* Cyberpunk grid */
+.cyberpunk-grid {
+  background-image:
+    linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px);
+  background-size: 50px 50px;
+  perspective: 500px;
+  transform: rotateX(60deg) translateY(-50%);
+  transform-origin: center top;
+}
+
+.cyberpunk-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    hsl(var(--primary) / 0.1) 2px,
+    hsl(var(--primary) / 0.1) 4px
+  );
+}
+
+/* Ocean waves animation */
+.ocean-wave-1 {
+  animation: ocean-wave 8s ease-in-out infinite;
+}
+
+.ocean-wave-2 {
+  animation: ocean-wave 10s ease-in-out infinite reverse;
+}
+
+@keyframes ocean-wave {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-5%); }
+}
+
+/* Sunset bands */
+.sunset-bands {
+  background:
+    linear-gradient(180deg,
+      transparent 0%,
+      hsl(var(--accent) / 0.1) 20%,
+      hsl(var(--primary) / 0.15) 40%,
+      hsl(var(--secondary) / 0.1) 60%,
+      transparent 80%
+    );
+}
+
+/* Galaxy stars */
+.galaxy-stars {
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, white, transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1px 1px at 230px 80px, white, transparent),
+    radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 350px 60px, white, transparent),
+    radial-gradient(2px 2px at 420px 180px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 500px 100px, white, transparent),
+    radial-gradient(2px 2px at 580px 200px, rgba(255,255,255,0.6), transparent);
+  background-size: 600px 250px;
+  animation: twinkle 8s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.45; }
+}
+
+/* Aurora waves */
+.aurora-waves {
+  background:
+    linear-gradient(180deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.05) 30%,
+      hsl(var(--secondary) / 0.08) 50%,
+      hsl(var(--accent) / 0.05) 70%,
+      transparent 100%
+    );
+}
+
+.aurora-gradient {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.2) 20%,
+    hsl(var(--secondary) / 0.15) 40%,
+    hsl(var(--accent) / 0.2) 60%,
+    hsl(var(--primary) / 0.15) 80%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(180deg, white 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, white 0%, transparent 100%);
+}
+
+@keyframes animate-aurora {
+  0%, 100% { transform: translateX(-10%) skewX(-5deg); opacity: 0.5; }
+  50% { transform: translateX(10%) skewX(5deg); opacity: 0.8; }
+}
+
+.animate-aurora {
+  animation: animate-aurora 20s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Retro sun */
+.retro-sun {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--primary)) 40%,
+    transparent 40%,
+    transparent 45%,
+    hsl(var(--primary) / 0.8) 45%,
+    hsl(var(--primary) / 0.8) 50%,
+    transparent 50%,
+    transparent 55%,
+    hsl(var(--primary) / 0.6) 55%,
+    hsl(var(--primary) / 0.6) 60%,
+    transparent 60%,
+    transparent 65%,
+    hsl(var(--primary) / 0.4) 65%,
+    hsl(var(--primary) / 0.4) 70%,
+    transparent 70%
+  );
+  border-radius: 50% 50% 0 0;
+  clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+}
+
+.retro-grid {
+  background-image:
+    linear-gradient(hsl(var(--secondary) / 0.5) 2px, transparent 2px),
+    linear-gradient(90deg, hsl(var(--secondary) / 0.5) 2px, transparent 2px);
+  background-size: 60px 60px;
+  perspective: 400px;
+  transform: rotateX(75deg);
+  transform-origin: center top;
+}
+
+.retro-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0, 0, 0, 0.3) 1px,
+    rgba(0, 0, 0, 0.3) 2px
+  );
+}
+
+/* Midnight stars */
+.midnight-stars {
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, hsl(var(--primary) / 0.8), transparent),
+    radial-gradient(1px 1px at 30% 50%, hsl(var(--secondary) / 0.6), transparent),
+    radial-gradient(2px 2px at 50% 10%, white, transparent),
+    radial-gradient(1px 1px at 70% 60%, hsl(var(--primary) / 0.7), transparent),
+    radial-gradient(1px 1px at 90% 30%, hsl(var(--accent) / 0.5), transparent),
+    radial-gradient(2px 2px at 15% 80%, hsl(var(--secondary) / 0.4), transparent),
+    radial-gradient(1px 1px at 85% 90%, white, transparent);
+  background-size: 100% 100%;
+}
+
+/* Floating animation for backgrounds */
+.animate-float-slow {
+  animation: float-slow 30s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -20px) scale(1.05); }
+  66% { transform: translate(-15px, 15px) scale(0.95); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 12s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.05); }
+}
+
+/* Animation delays */
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-5000 {
+  animation-delay: 5s;
+}
+
+/* ==================== SPECIAL THEME ANIMATIONS ==================== */
+
+/* Cyberpunk: Glitch effect */
+[data-theme="cyberpunk"] .animate-theme-special {
+  animation: cyberpunk-glitch 0.3s ease-in-out;
+}
+
+@keyframes cyberpunk-glitch {
+  0%, 100% { transform: translate(0); filter: hue-rotate(0deg); }
+  20% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+  40% { transform: translate(2px, -2px); filter: hue-rotate(-90deg); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+}
+
+/* Galaxy: Cosmic pulse */
+[data-theme="galaxy"] .animate-theme-special {
+  animation: galaxy-pulse 4s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+@keyframes galaxy-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.25),
+                0 0 30px hsl(var(--secondary) / 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px hsl(var(--primary) / 0.35),
+                0 0 50px hsl(var(--secondary) / 0.2);
+  }
+}
+
+/* Aurora: Wave shimmer */
+[data-theme="aurora"] .animate-theme-special {
+  animation: aurora-shimmer 5s ease-in-out infinite;
+  will-change: background-position;
+}
+
+@keyframes aurora-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Retro: Neon flicker */
+[data-theme="retro"] .animate-theme-special {
+  animation: retro-neon 4s steps(1) infinite;
+  will-change: opacity;
+}
+
+@keyframes retro-neon {
+  0%, 100% {
+    text-shadow: 0 0 8px hsl(var(--primary)), 0 0 16px hsl(var(--primary));
+    opacity: 1;
+  }
+  50% {
+    text-shadow: 0 0 4px hsl(var(--primary)), 0 0 8px hsl(var(--primary));
+    opacity: 0.97;
+  }
+}
+
+/* ==================== REDUCED MOTION & PERFORMANCE ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Optimize background rendering */
+.theme-gradient-bg,
+.galaxy-stars,
+.aurora-gradient,
+.midnight-stars {
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
