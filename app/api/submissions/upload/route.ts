@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { writeFile, mkdir, readFile } from "fs/promises";
-import path from "path";
 import { extractHandwrittenFromSubmission } from "@/lib/services/ocr-service";
 import { gradeSubmissionWithText, formatFeedbackAsMarkdown } from "@/lib/services/grading-service";
+import { uploadFile, generateFilename } from "@/lib/storage";
 
 /**
  * Get MIME type from file extension
@@ -128,26 +127,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-
     let imageUrls: string[] = [];
     const buffers: { buffer: Buffer; mimeType: string }[] = [];
 
     if (hasReuseUrls) {
-      // Reuse existing image URLs - load buffers from disk
+      // Reuse existing image URLs - fetch buffers from blob storage
       console.log(`Reusing ${reuseImageUrls.length} existing images for resubmission`);
       imageUrls = reuseImageUrls;
 
       for (const url of reuseImageUrls) {
         try {
-          const filePath = path.join(process.cwd(), "public", url);
-          const buffer = await readFile(filePath);
-          const ext = path.extname(url).toLowerCase();
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const ext = url.substring(url.lastIndexOf(".")).toLowerCase();
           const mimeType = getMimeTypeFromExtension(ext);
           buffers.push({ buffer, mimeType });
         } catch (error) {
-          console.error(`Failed to read file ${url}:`, error);
+          console.error(`Failed to fetch file ${url}:`, error);
           return NextResponse.json(
             { error: `Failed to load previous image: ${url}` },
             { status: 400 }
@@ -155,19 +153,17 @@ export async function POST(request: NextRequest) {
         }
       }
     } else {
-      // Save new files
+      // Upload new files to blob storage
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Generate unique filename
-        const ext = path.extname(file.name);
-        const filename = `${studentId}-${assessmentId}-${Date.now()}-${i}${ext}`;
-        const filepath = path.join(uploadsDir, filename);
+        // Generate unique filename and upload
+        const filename = generateFilename(`submissions/${studentId}-${assessmentId}`, file.name, i);
+        const blobUrl = await uploadFile(buffer, filename, file.type);
 
-        await writeFile(filepath, buffer);
-        imageUrls.push(`/uploads/${filename}`);
+        imageUrls.push(blobUrl);
         buffers.push({ buffer, mimeType: file.type });
       }
     }

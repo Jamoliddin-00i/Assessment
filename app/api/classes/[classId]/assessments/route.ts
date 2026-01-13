@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import {
   extractTextFromMultipleMarkSchemeFiles,
   extractTextFromMarkSchemeFile,
   isSupportedMarkSchemeType,
   getExtensionFromMimeType,
 } from "@/lib/services/ocr-service";
+import { uploadFile } from "@/lib/storage";
 
 export async function POST(
   request: NextRequest,
@@ -65,10 +64,7 @@ export async function POST(
       }
     }
 
-    // Save all files
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "markschemes");
-    await mkdir(uploadsDir, { recursive: true });
-
+    // Upload all files to blob storage
     const savedFileUrls: string[] = [];
     const fileBuffers: { buffer: Buffer; mimeType: string; filename: string }[] = [];
 
@@ -78,13 +74,11 @@ export async function POST(
       const buffer = Buffer.from(bytes);
 
       // Get the appropriate extension based on MIME type
-      const extension = getExtensionFromMimeType(file.type) || path.extname(file.name) || ".bin";
-      const filename = `${classId}-${Date.now()}-${i}${extension}`;
-      const filepath = path.join(uploadsDir, filename);
-      await writeFile(filepath, buffer);
+      const extension = getExtensionFromMimeType(file.type) || file.name.substring(file.name.lastIndexOf(".")) || ".bin";
+      const filename = `markschemes/${classId}-${Date.now()}-${i}${extension}`;
+      const blobUrl = await uploadFile(buffer, filename, file.type);
 
-      const fileUrl = `/uploads/markschemes/${filename}`;
-      savedFileUrls.push(fileUrl);
+      savedFileUrls.push(blobUrl);
       fileBuffers.push({ buffer, mimeType: file.type, filename: file.name });
     }
 
