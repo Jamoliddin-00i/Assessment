@@ -35,7 +35,13 @@
       "Bash(python -c \"import os; os.remove\\(r''D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")",
       "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\D:\\\\Projects\\\\Assesment checker\\\\nul''\\)\")",
       "Bash(node -e:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(npm audit:*)",
+      "Bash(npm show:*)",
+      "WebFetch(domain:vercel.link)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(npm ls:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
